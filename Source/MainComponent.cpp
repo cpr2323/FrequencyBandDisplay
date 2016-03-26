@@ -68,11 +68,14 @@ public:
 private:
     float mA, mB, mZ;};
 
+///////////////////////////////////////////////////////
+// MeterComp
 class MeterComp : public Component
 {
 public:
 	MeterComp(void)
 		: mMeterValue(0.0),
+          mShowPeak(true),
           mShowFilteredMeterValue(true)
 	{
         addAndMakeVisible(mMeterLabel);
@@ -121,13 +124,17 @@ public:
     }
         
 private:
-	float             mMeterValue;
+    float             mMeterValue;
     cSinglePoleFilter mFilteredMeterValue;
     Label             mMeterLabel;
+        
+    cSinglePoleFilter mPeakValue;
+    bool              mShowPeak;
     bool              mShowFilteredMeterValue;
 };
 
-//==============================================================================
+///////////////////////////////////////////////////////
+// MainComponent
 MainComponent::MainComponent ()
     : mNumberOfBands(0),
 	  mBandWidth(0),
@@ -143,12 +150,12 @@ MainComponent::MainComponent ()
 
 	for (int curBinIndex = 0; curBinIndex < MAX_BINS; ++curBinIndex)
 	{
-		addAndMakeVisible(mFHTBandComps[curBinIndex] = new MeterComp());
+		addAndMakeVisible(mFrequencyBandMeters[curBinIndex] = new MeterComp());
 	}
 
 	for (int curBinIndex = 0; curBinIndex < MAX_BINS; ++curBinIndex)
 	{
-		mFHTBins[curBinIndex] = 0;
+		mFrequencyBandData[curBinIndex] = 0;
 	}
 
 	startTimer(eTimerId1ms, 1);
@@ -167,7 +174,7 @@ MainComponent::~MainComponent()
     
 	for (int curBinIndex = 0; curBinIndex < MAX_BINS; ++curBinIndex)
 	{
-		deleteAndZero(mFHTBandComps[curBinIndex]);
+		deleteAndZero(mFrequencyBandMeters[curBinIndex]);
 	}
     deleteAndZero (quitButton);
 
@@ -234,11 +241,11 @@ void MainComponent::UpdateBinDisplay(void)
 
 	for (int curBinIndex = 0; curBinIndex < jmin(mNumberOfBands, MAX_BINS); ++curBinIndex)
 	{
-		mFHTBandComps[curBinIndex]->setVisible(true);
-		mFHTBandComps[curBinIndex]->setBounds(curBinIndex * mBandWidth + 2, 10, mBandWidth - 2, getHeight() * 0.75);
+		mFrequencyBandMeters[curBinIndex]->setVisible(true);
+		mFrequencyBandMeters[curBinIndex]->setBounds(curBinIndex * mBandWidth + 2, 10, mBandWidth - 2, getHeight() * 0.75);
 	}
 	for (int curBinIndex = jmin(mNumberOfBands, MAX_BINS); curBinIndex < MAX_BINS; ++curBinIndex)
-		mFHTBandComps[curBinIndex]->setVisible(false);
+		mFrequencyBandMeters[curBinIndex]->setVisible(false);
 }
 
 void MainComponent::buttonClicked (Button* buttonThatWasClicked)
@@ -282,7 +289,7 @@ void MainComponent::timerCallback(int timerId)
 							{
 								if (incomingData[curByteOffset] == kBeginPacket)
 								{
-									mRawFHTData = String::empty;
+									mRawSerialData = String::empty;
 									mParseState = eParseStateReading;
 								}
 							}
@@ -293,16 +300,16 @@ void MainComponent::timerCallback(int timerId)
 								if (incomingData[curByteOffset] == kEndPacket)
 								{
 									mParseState = eParseStateIdle;
-									Logger::outputDebugString("pkt: " + mRawFHTData);
-                                    int startOfByteCount = mRawFHTData.indexOf("|");
+									Logger::outputDebugString("pkt: " + mRawSerialData);
+                                    int startOfByteCount = mRawSerialData.indexOf("|");
                                     if (startOfByteCount == -1)
                                         break;
-                                    int expectedByteCount = mRawFHTData.substring(startOfByteCount + 1).getIntValue();
+                                    int expectedByteCount = mRawSerialData.substring(startOfByteCount + 1).getIntValue();
                                     if (expectedByteCount != startOfByteCount + 1)
                                         break;
-                                    char cmd = mRawFHTData[0];
+                                    char cmd = mRawSerialData[0];
                                     // skip over command byte
-                                    mRawFHTData = mRawFHTData.substring(1);
+                                    mRawSerialData = mRawSerialData.substring(1);
                                     
                                     switch (cmd)
                                     {
@@ -311,13 +318,13 @@ void MainComponent::timerCallback(int timerId)
                                             // count:<comma separated bin data>
                                             // D7:126,100,5,34,79,80,120
                                             
-                                            String testString(mRawFHTData.substring(0, mRawFHTData.indexOf(":")));
+                                            String testString(mRawSerialData.substring(0, mRawSerialData.indexOf(":")));
                                             if (testString.isEmpty() || !testString.containsOnly("0123456789"))
                                                 break;
                                             
                                             int commaCount = 0;
                                             int findOffset = 0;
-                                            String tempString(mRawFHTData);
+                                            String tempString(mRawSerialData);
                                             int newFindOffset = tempString.indexOf(findOffset, ",");
                                             while (newFindOffset != -1)
                                             {
@@ -325,8 +332,8 @@ void MainComponent::timerCallback(int timerId)
                                                 findOffset = newFindOffset + 1;
                                                 newFindOffset = tempString.indexOf(findOffset, ",");
                                             }
-                                            int binCount = mRawFHTData.getIntValue();
-                                            if (mRawFHTData.containsChar(':') && binCount == 7 && commaCount == 6)
+                                            int binCount = mRawSerialData.getIntValue();
+                                            if (mRawSerialData.containsChar(':') && binCount == 7 && commaCount == 6)
                                             {
                                                 if (binCount != mNumberOfBands)
                                                 {
@@ -335,16 +342,16 @@ void MainComponent::timerCallback(int timerId)
                                                     Logger::outputDebugString(String(binCount) + String("************bin count changed************"));
                                                 }
                                                 // skip over bin count and ':' separator
-                                                mRawFHTData = mRawFHTData.trimCharactersAtStart(String("0123456789"));
-                                                mRawFHTData = mRawFHTData.trimCharactersAtStart(String(":"));
+                                                mRawSerialData = mRawSerialData.trimCharactersAtStart(String("0123456789"));
+                                                mRawSerialData = mRawSerialData.trimCharactersAtStart(String(":"));
                                                 
                                                 // read in data for each band
                                                 for (int curBinIndex = 0; curBinIndex < jmin(mNumberOfBands, MAX_BINS); ++curBinIndex)
                                                 {
                                                     // 126,100,5,etc
-                                                    mFHTBins[curBinIndex] = mRawFHTData.getIntValue();
-                                                    mRawFHTData = mRawFHTData.trimCharactersAtStart(String("0123456789."));
-                                                    mRawFHTData = mRawFHTData.trimCharactersAtStart(String(","));
+                                                    mFrequencyBandData[curBinIndex] = mRawSerialData.getIntValue();
+                                                    mRawSerialData = mRawSerialData.trimCharactersAtStart(String("0123456789."));
+                                                    mRawSerialData = mRawSerialData.trimCharactersAtStart(String(","));
                                                 }
                                             }
                                         }
@@ -354,13 +361,13 @@ void MainComponent::timerCallback(int timerId)
                                         {
                                             // count:<comma separated quoted labels data>
                                             // L7:"1Hz","5Hz","10Hz","20Hz","40Hz","80Hz","160Hz"
-                                            String testString(mRawFHTData.substring(0, mRawFHTData.indexOf(":")));
+                                            String testString(mRawSerialData.substring(0, mRawSerialData.indexOf(":")));
                                             if (testString.isEmpty() || !testString.containsOnly("0123456789"))
                                                 break;
  
                                             int commaCount = 0;
                                             int findOffset = 0;
-                                            String tempString(mRawFHTData);
+                                            String tempString(mRawSerialData);
                                             int newFindOffset = tempString.indexOf(findOffset, ",");
                                             while (newFindOffset != -1)
                                             {
@@ -368,8 +375,8 @@ void MainComponent::timerCallback(int timerId)
                                                 findOffset = newFindOffset + 1;
                                                 newFindOffset = tempString.indexOf(findOffset, ",");
                                             }
-                                            int binCount = mRawFHTData.getIntValue();
-                                            if (mRawFHTData.containsChar(':') && binCount == 7 && commaCount == 6)
+                                            int binCount = mRawSerialData.getIntValue();
+                                            if (mRawSerialData.containsChar(':') && binCount == 7 && commaCount == 6)
                                             {
                                                 if (binCount != mNumberOfBands)
                                                 {
@@ -378,18 +385,18 @@ void MainComponent::timerCallback(int timerId)
                                                     Logger::outputDebugString(String(binCount) + String(" ************bin count changed************"));
                                                 }
                                                 // skip over bin count and ':' separator
-                                                mRawFHTData = mRawFHTData.trimCharactersAtStart(String("0123456789"));
-                                                mRawFHTData = mRawFHTData.trimCharactersAtStart(String(":"));
+                                                mRawSerialData = mRawSerialData.trimCharactersAtStart(String("0123456789"));
+                                                mRawSerialData = mRawSerialData.trimCharactersAtStart(String(":"));
                                                 
                                                 // read in label for each band
                                                 for (int curBinIndex = 0; curBinIndex < jmin(mNumberOfBands, MAX_BINS); ++curBinIndex)
                                                 {
                                                     // find and strip off first "
-                                                    mRawFHTData = mRawFHTData.fromFirstOccurrenceOf(String("\""), false, false);
+                                                    mRawSerialData = mRawSerialData.fromFirstOccurrenceOf(String("\""), false, false);
                                                     // "20Hz", "10Hz", etc
-                                                    mBandLabels[curBinIndex] = mRawFHTData.upToFirstOccurrenceOf(String("\""), false, false);
+                                                    mFrequencyBandLabels[curBinIndex] = mRawSerialData.upToFirstOccurrenceOf(String("\""), false, false);
                                                     // skip ending '",'
-                                                    mRawFHTData = mRawFHTData.fromFirstOccurrenceOf(String("\","), false, false);
+                                                    mRawSerialData = mRawSerialData.fromFirstOccurrenceOf(String("\","), false, false);
                                                 }
                                             }
                                         }
@@ -404,7 +411,7 @@ void MainComponent::timerCallback(int timerId)
 								}
 								else
 								{
-									mRawFHTData += String(String::charToString(incomingData[curByteOffset]));
+									mRawSerialData += String(String::charToString(incomingData[curByteOffset]));
 								}
 							}
 							break;
@@ -422,12 +429,9 @@ void MainComponent::timerCallback(int timerId)
 		{
 			for (int curBinIndex = 0; curBinIndex < jmin(mNumberOfBands, MAX_BINS); ++curBinIndex)
 			{
-				//if (mFHTBins[curBinIndex] > 19) // silly hack to hide some noise
-                int fhtValue = jmax(mFHTBins[curBinIndex], 0);
-                mFHTBandComps[curBinIndex]->SetMeterValue((float)fhtValue/(float)kInputMax);
-				//else
-					//mFHTBandComps[curBinIndex]->SetMeterLevel(0.0);
-                mFHTBandComps[curBinIndex]->SetMeterLabel(mBandLabels[curBinIndex]);
+                int frequencyBandValue = jmax(mFrequencyBandData[curBinIndex], 0);
+                mFrequencyBandMeters[curBinIndex]->SetMeterValue((float)frequencyBandValue/(float)kInputMax);
+                mFrequencyBandMeters[curBinIndex]->SetMeterLabel(mFrequencyBandLabels[curBinIndex]);
 			}
 		}
 		break;

@@ -48,11 +48,11 @@ private:
     ScopedPointer<SerialPortInputStream> mSerialPortInput;
 	int			mParseState;
 
-	String		mRawFHTData;
-	int			mNumberOfBands ;
-	int			mFHTBins[MAX_BINS];
-    String      mBandLabels[MAX_BINS];
-	MeterComp*  mFHTBandComps[MAX_BINS];
+    int			mNumberOfBands;
+	String		mRawSerialData;
+	int			mFrequencyBandData[MAX_BINS];
+    String      mFrequencyBandLabels[MAX_BINS];
+	MeterComp*  mFrequencyBandMeters[MAX_BINS];
 
 	void UpdateBinDisplay(void);
 	int mBandWidth;
