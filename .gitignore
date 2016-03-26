@@ -1,0 +1,5 @@
+# oonet project files to ignore
+JuceLibraryCode/**
+Builds/**
+*.bak
+.DS_Store
