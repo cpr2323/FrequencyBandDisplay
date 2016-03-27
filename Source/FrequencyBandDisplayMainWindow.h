@@ -23,8 +23,8 @@ private:
     /////////////////////////////
     enum
     {
-        eTimerId1ms = 0,
-        eTimerId16ms
+        eTimerIdFastTimer = 0,
+        eTimerId60FPSTimer
     };
 
     enum
@@ -66,6 +66,8 @@ private:
     
     CriticalSection mFrequencyBandDataLock;
     CriticalSection mFrequencyBandLabelLock;
+    
+    bool mDoGuiResize;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FrequencyBandDisplayMainWindow)
 };

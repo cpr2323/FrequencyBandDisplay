@@ -69,6 +69,8 @@ private:
     float mA, mB, mZ;
 };
 
+///////////////////////////////////////////////////////
+// cPeakWithHold
 class cPeakWithHold
 {
 public:
@@ -208,7 +210,8 @@ FrequencyBandDisplayMainWindow::FrequencyBandDisplayMainWindow ()
     : Thread(String("FrequencyBandDisplayMainWindow")),
       mNumberOfBands(0),
 	  mBandWidth(0),
-      quitButton (0)
+      quitButton (0),
+      mDoGuiResize(false)
 {
     addAndMakeVisible (quitButton = new TextButton (String::empty));
     quitButton->setButtonText ("Quit");
@@ -231,8 +234,10 @@ FrequencyBandDisplayMainWindow::FrequencyBandDisplayMainWindow ()
     // start the serial thread reading data
     startThread();
     
-    // start the GUI update timeer, reading data from the backend and updating the GUI
-    startTimer(eTimerId16ms, 16);
+    startTimer(eTimerIdFastTimer, 1);
+    
+    // start the GUI update timeer for updating the GUI
+    startTimer(eTimerId60FPSTimer, 16);
 
     setSize (900, 300);
 
@@ -241,8 +246,9 @@ FrequencyBandDisplayMainWindow::FrequencyBandDisplayMainWindow ()
 FrequencyBandDisplayMainWindow::~FrequencyBandDisplayMainWindow()
 {
     stopThread(500);
-	stopTimer(eTimerId16ms);
-
+	stopTimer(eTimerId60FPSTimer);
+	stopTimer(eTimerIdFastTimer);
+    
     CloseSerialPort();
     
 	for (int curBinIndex = 0; curBinIndex < MAX_BINS; ++curBinIndex)
@@ -305,8 +311,7 @@ const int kQuitButtonWidth = 60;
 const int kQuitButtonHeight = 20;
 void FrequencyBandDisplayMainWindow::resized()
 {
-	UpdateFrequencyBandsGui();
-	quitButton->setBounds(getWidth() - kQuitButtonWidth - 2, getHeight() - kQuitButtonHeight - 2, kQuitButtonWidth, kQuitButtonHeight);
+    mDoGuiResize = true;;
 }
 
 void FrequencyBandDisplayMainWindow::UpdateFrequencyBandsGui(void)
@@ -391,7 +396,6 @@ void FrequencyBandDisplayMainWindow::run()
                                             if (binCount != mNumberOfBands)
                                             {
                                                 mNumberOfBands = binCount;
-                                                UpdateFrequencyBandsGui();
                                                 Logger::outputDebugString(String(binCount) + String("************bin count changed************"));
                                             }
                                             // skip over bin count and ':' separator
@@ -423,7 +427,6 @@ void FrequencyBandDisplayMainWindow::run()
                                             if (binCount != mNumberOfBands)
                                             {
                                                 mNumberOfBands = binCount;
-                                                UpdateFrequencyBandsGui();
                                                 Logger::outputDebugString(String(binCount) + String(" ************bin count changed************"));
                                             }
                                             // skip over bin count and ':' separator
@@ -474,7 +477,18 @@ void FrequencyBandDisplayMainWindow::timerCallback(int timerId)
 {
 	switch(timerId)
 	{
-		case eTimerId16ms :
+        case eTimerIdFastTimer :
+        {
+            if (mDoGuiResize)
+            {
+                UpdateFrequencyBandsGui();
+                quitButton->setBounds(getWidth() - kQuitButtonWidth - 2, getHeight() - kQuitButtonHeight - 2, kQuitButtonWidth, kQuitButtonHeight);
+                mDoGuiResize = false;
+            }
+        }
+        break;
+            
+		case eTimerId60FPSTimer :
 		{
 			for (int curBinIndex = 0; curBinIndex < jmin(mNumberOfBands, MAX_BINS); ++curBinIndex)
 			{
