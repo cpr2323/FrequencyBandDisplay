@@ -8,7 +8,8 @@ class MeterComp;
 
 class FrequencyBandDisplayMainWindow  : public Component,
                                         public ButtonListener,
-                                        public MultiTimer
+                                        public MultiTimer,
+                                        public Thread
 {
 public:
     //==============================================================================
@@ -17,33 +18,40 @@ public:
 
     //==============================================================================
 
-    void paint (Graphics& g);
-    void resized();
-    void buttonClicked (Button* buttonThatWasClicked);
-
-	enum
-	{
-		eTimerId1ms = 0,
-		eTimerId16ms
-	};
-
-	void timerCallback (int timerId);
 
 private:
-    void OpenSerialPort(void);
-    void CloseSerialPort(void);
+    /////////////////////////////
+    enum
+    {
+        eTimerId1ms = 0,
+        eTimerId16ms
+    };
 
-	enum
-	{
-		eParseStateIdle = 0,
-		eParseStateReading,
-	};
+    enum
+    {
+        eParseStateIdle = 0,
+        eParseStateReading,
+    };
 
     #define kBeginPacket '<'
     #define kEndPacket   '>'
     #define kBandData    'D'
     #define kBandLabels  'L'
 
+    /////////////////////////////
+    void paint (Graphics& g) override;
+    void resized() override;
+    void buttonClicked (Button* buttonThatWasClicked) override;
+    
+    void timerCallback (int timerId) override;
+    
+    void run() override;
+
+    void OpenSerialPort(void);
+    void CloseSerialPort(void);
+    void UpdateFrequencyBandsGui(void);
+
+    /////////////////////////////
     ScopedPointer<SerialPort>            mSerialPort;
     ScopedPointer<SerialPortInputStream> mSerialPortInput;
 	int			mParseState;
@@ -53,13 +61,12 @@ private:
 	int			mFrequencyBandData[MAX_BINS];
     String      mFrequencyBandLabels[MAX_BINS];
 	MeterComp*  mFrequencyBandMeters[MAX_BINS];
-
-	void UpdateFrequencyBandsGui(void);
-	int mBandWidth;
-    //==============================================================================
+    int mBandWidth;
     TextButton* quitButton;
+    
+    CriticalSection mFrequencyBandDataLock;
+    CriticalSection mFrequencyBandLabelLock;
 
-    //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FrequencyBandDisplayMainWindow)
 };
 

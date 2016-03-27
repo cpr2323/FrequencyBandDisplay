@@ -205,7 +205,8 @@ private:
 ///////////////////////////////////////////////////////
 // FrequencyBandDisplayMainWindow
 FrequencyBandDisplayMainWindow::FrequencyBandDisplayMainWindow ()
-    : mNumberOfBands(0),
+    : Thread(String("FrequencyBandDisplayMainWindow")),
+      mNumberOfBands(0),
 	  mBandWidth(0),
       quitButton (0)
 {
@@ -227,8 +228,11 @@ FrequencyBandDisplayMainWindow::FrequencyBandDisplayMainWindow ()
 		mFrequencyBandData[curBinIndex] = 0;
 	}
 
-	startTimer(eTimerId1ms, 1);
-	startTimer(eTimerId16ms, 16);
+    // start the serial thread reading data
+    startThread();
+    
+    // start the GUI update timeer, reading data from the backend and updating the GUI
+    startTimer(eTimerId16ms, 16);
 
     setSize (900, 300);
 
@@ -236,8 +240,8 @@ FrequencyBandDisplayMainWindow::FrequencyBandDisplayMainWindow ()
 
 FrequencyBandDisplayMainWindow::~FrequencyBandDisplayMainWindow()
 {
+    stopThread(500);
 	stopTimer(eTimerId16ms);
-	stopTimer(eTimerId1ms);
 
     CloseSerialPort();
     
@@ -328,80 +332,75 @@ void FrequencyBandDisplayMainWindow::buttonClicked (Button* buttonThatWasClicked
 }
 
 #define kSerialPortBufferLen 256
-void FrequencyBandDisplayMainWindow::timerCallback(int timerId)
+void FrequencyBandDisplayMainWindow::run()
 {
-	switch(timerId)
-	{
-		case eTimerId1ms :
-		{
-            if (mSerialPortInput == nullptr)
-                return;
-
-            int  maxBytesPerTimerCallback = kSerialPortBufferLen * 2;
-			int  totalBytesRead			  = 0;
-			int  bytesRead				  = 0;
-			int  curByteOffset			  = 0;
-			int  dataLength				  = kSerialPortBufferLen;
-			char incomingData[kSerialPortBufferLen] = "";
-
-			while((!mSerialPortInput->isExhausted()) && totalBytesRead < maxBytesPerTimerCallback)
-			{
-				bytesRead = mSerialPortInput->read(incomingData, dataLength);
-				if (bytesRead < 1)
-					break;
-				else
-				{
-					curByteOffset = totalBytesRead;
-					while (curByteOffset < totalBytesRead + bytesRead)
-					{
-						switch (mParseState)
-						{
-							case eParseStateIdle :
-							{
-								if (incomingData[curByteOffset] == kBeginPacket)
-								{
-									mRawSerialData = String::empty;
-									mParseState = eParseStateReading;
-								}
-							}
-							break;
-
-							case eParseStateReading :
-							{
-								if (incomingData[curByteOffset] == kEndPacket)
-								{
-									mParseState = eParseStateIdle;
-									Logger::outputDebugString("pkt: " + mRawSerialData);
-                                    int startOfByteCount = mRawSerialData.indexOf("|");
-                                    if (startOfByteCount == -1)
-                                        break;
-                                    int expectedByteCount = mRawSerialData.substring(startOfByteCount + 1).getIntValue();
-                                    if (expectedByteCount != startOfByteCount + 1)
-                                        break;
-                                    
-                                    char cmd = mRawSerialData[0];
-                                    // skip over command byte
-                                    mRawSerialData = mRawSerialData.substring(1);
-                                    switch (cmd)
+    while (!threadShouldExit())
+    {
+        // handle reading from the serial port
+        if (!threadShouldExit() && (mSerialPortInput != nullptr) && (!mSerialPortInput->isExhausted()))
+        {
+            int  bytesRead				  = 0;
+            int  curByteOffset			  = 0;
+            char incomingData[kSerialPortBufferLen] = "";
+            
+            bytesRead = mSerialPortInput->read(incomingData, kSerialPortBufferLen);
+            if (bytesRead < 1)
+                continue;
+            else
+            {
+                // parse incoming data
+                while (curByteOffset < bytesRead)
+                {
+                    switch (mParseState)
+                    {
+                        case eParseStateIdle :
+                        {
+                            if (incomingData[curByteOffset] == kBeginPacket)
+                            {
+                                mRawSerialData = String::empty;
+                                mParseState = eParseStateReading;
+                            }
+                        }
+                        break;
+                            
+                        case eParseStateReading :
+                        {
+                            if (incomingData[curByteOffset] == kEndPacket)
+                            {
+                                mParseState = eParseStateIdle;
+                                Logger::outputDebugString("pkt: " + mRawSerialData);
+                                int startOfByteCount = mRawSerialData.indexOf("|");
+                                if (startOfByteCount == -1)
+                                    break;
+                                int expectedByteCount = mRawSerialData.substring(startOfByteCount + 1).getIntValue();
+                                if (expectedByteCount != startOfByteCount + 1)
+                                    break;
+                                
+                                char cmd = mRawSerialData[0];
+                                // skip over command byte
+                                mRawSerialData = mRawSerialData.substring(1);
+                                switch (cmd)
+                                {
+                                    case kBandData:
                                     {
-                                        case kBandData:
+                                        // count:<comma separated bin data>
+                                        // D7:126,100,5,34,79,80,120
+                                        int binCount = mRawSerialData.getIntValue();
+                                        if (binCount > 0)
                                         {
-                                            // count:<comma separated bin data>
-                                            // D7:126,100,5,34,79,80,120
-                                            int binCount = mRawSerialData.getIntValue();
-                                            if (binCount > 0)
+                                            if (binCount != mNumberOfBands)
                                             {
-                                                if (binCount != mNumberOfBands)
-                                                {
-                                                    mNumberOfBands = binCount;
-                                                    UpdateFrequencyBandsGui();
-                                                    Logger::outputDebugString(String(binCount) + String("************bin count changed************"));
-                                                }
-                                                // skip over bin count and ':' separator
-                                                mRawSerialData = mRawSerialData.trimCharactersAtStart(String("0123456789"));
-                                                mRawSerialData = mRawSerialData.trimCharactersAtStart(String(":"));
-                                                
-                                                // read in data for each band
+                                                mNumberOfBands = binCount;
+                                                UpdateFrequencyBandsGui();
+                                                Logger::outputDebugString(String(binCount) + String("************bin count changed************"));
+                                            }
+                                            // skip over bin count and ':' separator
+                                            mRawSerialData = mRawSerialData.trimCharactersAtStart(String("0123456789"));
+                                            mRawSerialData = mRawSerialData.trimCharactersAtStart(String(":"));
+                                            
+                                            // read in data for each band
+                                            {
+                                                const ScopedLock scopedLock(mFrequencyBandDataLock);
                                                 for (int curBinIndex = 0; curBinIndex < jmin(mNumberOfBands, MAX_BINS); ++curBinIndex)
                                                 {
                                                     // 126,100,5,etc
@@ -411,26 +410,29 @@ void FrequencyBandDisplayMainWindow::timerCallback(int timerId)
                                                 }
                                             }
                                         }
-                                        break;
-                                            
-                                        case kBandLabels:
+                                    }
+                                    break;
+                                        
+                                    case kBandLabels:
+                                    {
+                                        // count:<comma separated quoted labels data>
+                                        // L7:"1Hz","5Hz","10Hz","20Hz","40Hz","80Hz","160Hz"
+                                        int binCount = mRawSerialData.getIntValue();
+                                        if (binCount > 0)
                                         {
-                                            // count:<comma separated quoted labels data>
-                                            // L7:"1Hz","5Hz","10Hz","20Hz","40Hz","80Hz","160Hz"
-                                            int binCount = mRawSerialData.getIntValue();
-                                            if (binCount > 0)
+                                            if (binCount != mNumberOfBands)
                                             {
-                                                if (binCount != mNumberOfBands)
-                                                {
-                                                    mNumberOfBands = binCount;
-                                                    UpdateFrequencyBandsGui();
-                                                    Logger::outputDebugString(String(binCount) + String(" ************bin count changed************"));
-                                                }
-                                                // skip over bin count and ':' separator
-                                                mRawSerialData = mRawSerialData.trimCharactersAtStart(String("0123456789"));
-                                                mRawSerialData = mRawSerialData.trimCharactersAtStart(String(":"));
-                                                
-                                                // read in label for each band
+                                                mNumberOfBands = binCount;
+                                                UpdateFrequencyBandsGui();
+                                                Logger::outputDebugString(String(binCount) + String(" ************bin count changed************"));
+                                            }
+                                            // skip over bin count and ':' separator
+                                            mRawSerialData = mRawSerialData.trimCharactersAtStart(String("0123456789"));
+                                            mRawSerialData = mRawSerialData.trimCharactersAtStart(String(":"));
+                                            
+                                            // read in label for each band
+                                            {
+                                                const ScopedLock scopedLock(mFrequencyBandLabelLock);
                                                 for (int curBinIndex = 0; curBinIndex < jmin(mNumberOfBands, MAX_BINS); ++curBinIndex)
                                                 {
                                                     // find and strip off first "
@@ -442,38 +444,49 @@ void FrequencyBandDisplayMainWindow::timerCallback(int timerId)
                                                 }
                                             }
                                         }
-                                        break;
-                                            
-                                        default:
-                                        {
-                                            // error - unknown cmd
-                                        }
-                                        break;
                                     }
-								}
-								else
-								{
-									mRawSerialData += String(String::charToString(incomingData[curByteOffset]));
-								}
-							}
-							break;
-						}
+                                    break;
+                                        
+                                    default:
+                                    {
+                                        // error - unknown cmd
+                                    }
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                mRawSerialData += String(String::charToString(incomingData[curByteOffset]));
+                            }
+                        }
+                        break;
+                    }
+                    
+                    ++curByteOffset;
+                }
+            }
+        }
+    }
+}
 
-						++curByteOffset;
-					}
-					totalBytesRead += bytesRead;
-				}
-			}
-		}
-		break;
 
+void FrequencyBandDisplayMainWindow::timerCallback(int timerId)
+{
+	switch(timerId)
+	{
 		case eTimerId16ms :
 		{
 			for (int curBinIndex = 0; curBinIndex < jmin(mNumberOfBands, MAX_BINS); ++curBinIndex)
 			{
                 int frequencyBandValue = jmax(mFrequencyBandData[curBinIndex], 0);
-                mFrequencyBandMeters[curBinIndex]->SetMeterValue((float)frequencyBandValue/(float)kInputMax);
-                mFrequencyBandMeters[curBinIndex]->SetMeterLabel(mFrequencyBandLabels[curBinIndex]);
+                {
+                    const ScopedLock scopedLock(mFrequencyBandDataLock);
+                    mFrequencyBandMeters[curBinIndex]->SetMeterValue((float)frequencyBandValue/(float)kInputMax);
+                }
+                {
+                    const ScopedLock scopedLock(mFrequencyBandLabelLock);
+                    mFrequencyBandMeters[curBinIndex]->SetMeterLabel(mFrequencyBandLabels[curBinIndex]);
+                }
 			}
 		}
 		break;
