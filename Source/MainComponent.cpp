@@ -66,7 +66,63 @@ public:
     }
     
 private:
-    float mA, mB, mZ;};
+    float mA, mB, mZ;
+};
+
+class cPeakWithHold
+{
+public:
+    cPeakWithHold(int64 _holdTime = 1000)
+    : mPeakValue(0.0),
+      mHoldTime(_holdTime),
+      mHoldTimeStart(Time::currentTimeMillis() - mHoldTime)
+    {
+        mFilteredPeakValue.Config(0.99);
+    }
+    
+    void SetValue(float _newValue)
+    {
+
+        if (_newValue > mPeakValue)
+        {
+            // store the new peak value
+            mPeakValue = _newValue;
+            mFilteredPeakValue.SetCurValue(_newValue);
+
+            // reset the timer
+            mHoldTimeStart = Time::currentTimeMillis();
+        }
+        else
+        {
+            // run the current value through the filtered value
+            if ((Time::currentTimeMillis() - mHoldTimeStart) >= mHoldTime)
+            {
+                mPeakValue = _newValue;
+                mFilteredPeakValue.DoFilter(_newValue);
+            }
+        }
+    }
+    
+    float GetValue(void)
+    {
+        float currentPeakHoldValue;
+        if ((Time::currentTimeMillis() - mHoldTimeStart) >= mHoldTime)
+        {
+            currentPeakHoldValue = jmax(mFilteredPeakValue.GetFilteredValue(), mPeakValue);
+        }
+        else
+        {
+            currentPeakHoldValue = mPeakValue;
+        }
+        
+        return currentPeakHoldValue;
+    }
+private:
+    float             mPeakValue;
+    cSinglePoleFilter mFilteredPeakValue;
+    int               mHoldTime;
+    int64             mHoldTimeStart;
+};
 
 ///////////////////////////////////////////////////////
 // MeterComp
@@ -85,12 +141,20 @@ public:
 
 	void paint(Graphics& g) override
 	{
-	    g.fillAll (Colours::white);
+        // drae background
+	    g.fillAll (Colours::grey);
 
+        // drae main mater
 		g.setColour(Colours::green);
         float meterValue = mShowFilteredMeterValue ? mFilteredMeterValue.GetFilteredValue() : mMeterValue;
 		int meterHeight = (int)(getHeight() * meterValue);
 		g.fillRect(0, getHeight() - meterHeight, getWidth(), meterHeight);
+        if (mShowPeak && mPeakValue.GetValue() > 0.0)
+        {
+            g.setColour(Colours::gold);
+            int peakHeight = (int)(getHeight() * mPeakValue.GetValue());
+            g.fillRect(0, (getHeight() - peakHeight) - 2, getWidth(), 5);
+        }
 	}
 
     void resized(void) override
@@ -105,11 +169,16 @@ public:
 	void SetMeterValue(float meterValue)
 	{
 		mMeterValue = meterValue;
+        
         if (meterValue > mFilteredMeterValue.GetFilteredValue())
             mFilteredMeterValue.SetCurValue(meterValue);
         else
             mFilteredMeterValue.DoFilter(meterValue);
-		repaint();
+        
+        //mPeakValue.SetValue(mFilteredMeterValue.GetFilteredValue());
+        mPeakValue.SetValue(meterValue);
+        
+        repaint();
 	}
 
     void SetMeterLabel(String meterLabel)
@@ -128,7 +197,7 @@ private:
     cSinglePoleFilter mFilteredMeterValue;
     Label             mMeterLabel;
         
-    cSinglePoleFilter mPeakValue;
+    cPeakWithHold     mPeakValue;
     bool              mShowPeak;
     bool              mShowFilteredMeterValue;
 };
