@@ -1,5 +1,5 @@
 #include "../JuceLibraryCode/JuceHeader.h"
-#include "MainComponent.h"
+#include "FrequencyBandDisplayMainWindow.h"
 
 //==============================================================================
 /**
@@ -18,7 +18,7 @@ public:
                           true)
     {
         // Create an instance of our main content component, and add it to our window..
-        setContentOwned (new MainComponent(), true);
+        setContentOwned (new FrequencyBandDisplayMainWindow(), true);
 
         // Centre the window on the screen
         centreWithSize (getWidth(), getHeight());

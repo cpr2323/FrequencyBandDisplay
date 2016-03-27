@@ -13,7 +13,7 @@ class FrequencyBandDisplayMainWindow  : public Component,
 public:
     //==============================================================================
     FrequencyBandDisplayMainWindow ();
-    FrequencyBandDisplayMainWindow();
+    ~FrequencyBandDisplayMainWindow();
 
     //==============================================================================
 
