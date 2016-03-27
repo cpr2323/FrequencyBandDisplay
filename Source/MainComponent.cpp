@@ -297,10 +297,12 @@ void MainComponent::paint (Graphics& g)
     g.fillAll (Colour (0xffc1d0ff));
 }
 
+const int kQuitButtonWidth = 60;
+const int kQuitButtonHeight = 20;
 void MainComponent::resized()
 {
 	UpdateBinDisplay();
-	quitButton->setBounds(getWidth() - 176, getHeight() - 60, 120, 32);
+	quitButton->setBounds(getWidth() - kQuitButtonWidth - 2, getHeight() - kQuitButtonHeight - 2, kQuitButtonWidth, kQuitButtonHeight);
 }
 
 void MainComponent::UpdateBinDisplay(void)

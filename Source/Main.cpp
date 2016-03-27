@@ -23,6 +23,8 @@ public:
         // Centre the window on the screen
         centreWithSize (getWidth(), getHeight());
 
+        setResizable(true, false);
+        
         // And show it!
         setVisible (true);
     }
