@@ -5,10 +5,10 @@
               includeBinaryInAppConfig="1" jucerVersion="3.2.0">
   <MAINGROUP id="dFQuBD" name="FrequencyBandDisplay">
     <GROUP id="{48CF2469-2F47-35BD-EE62-8796E03DBFB9}" name="Source">
-      <FILE id="qL8TSP" name="FrequencyBandDisplay.cpp" compile="1" resource="0"
-            file="Source/FrequencyBandDisplay.cpp"/>
-      <FILE id="wVk5JH" name="FrequencyBandDisplay.h" compile="0" resource="0"
-            file="Source/FrequencyBandDisplay.h"/>
+      <FILE id="UoJBG5" name="FrequencyBandDisplayMainWindow.cpp" compile="1"
+            resource="0" file="Source/FrequencyBandDisplayMainWindow.cpp"/>
+      <FILE id="Yn1jqS" name="FrequencyBandDisplayMainWindow.h" compile="0"
+            resource="0" file="Source/FrequencyBandDisplayMainWindow.h"/>
       <FILE id="GZSo0R" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
     </GROUP>
   </MAINGROUP>
