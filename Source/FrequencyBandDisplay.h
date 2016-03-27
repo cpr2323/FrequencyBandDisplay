@@ -6,14 +6,14 @@ class MeterComp;
 
 #define MAX_BINS 128
 
-class MainComponent  : public Component,
-                       public ButtonListener,
-					   public MultiTimer
+class FrequencyBandDisplayMainWindow  : public Component,
+                                        public ButtonListener,
+                                        public MultiTimer
 {
 public:
     //==============================================================================
-    MainComponent ();
-    ~MainComponent();
+    FrequencyBandDisplayMainWindow ();
+    FrequencyBandDisplayMainWindow();
 
     //==============================================================================
 
@@ -60,7 +60,7 @@ private:
     TextButton* quitButton;
 
     //==============================================================================
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FrequencyBandDisplayMainWindow)
 };
 
 #endif  // __MAINCOMPONENT_H_7D44AE5B__

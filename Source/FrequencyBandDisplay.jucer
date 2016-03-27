@@ -6,9 +6,10 @@
   <MAINGROUP id="dFQuBD" name="FrequencyBandDisplay">
     <GROUP id="{48CF2469-2F47-35BD-EE62-8796E03DBFB9}" name="Source">
       <FILE id="GZSo0R" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
-      <FILE id="MY5ncX" name="MainComponent.cpp" compile="1" resource="0"
-            file="Source/MainComponent.cpp"/>
-      <FILE id="rd30tw" name="MainComponent.h" compile="0" resource="0" file="Source/MainComponent.h"/>
+      <FILE id="MY5ncX" name="FrequncyBandDisplayMainWindow.cpp" compile="1"
+            resource="0" file="Source/FrequncyBandDisplayMainWindow.cpp"/>
+      <FILE id="rd30tw" name="FrequncyBandDisplayMainWindow.h" compile="0"
+            resource="0" file="Source/FrequncyBandDisplayMainWindow.h"/>
     </GROUP>
   </MAINGROUP>
   <EXPORTFORMATS>

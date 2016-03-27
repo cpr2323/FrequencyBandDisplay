@@ -1,4 +1,4 @@
-#include "MainComponent.h"
+#include "FrequencyBandDisplayMainWindow.h"
 
 #define kBPS 115200
 #define kInputMax 1023
@@ -203,8 +203,8 @@ private:
 };
 
 ///////////////////////////////////////////////////////
-// MainComponent
-MainComponent::MainComponent ()
+// FrequencyBandDisplayMainWindow
+FrequencyBandDisplayMainWindow::FrequencyBandDisplayMainWindow ()
     : mNumberOfBands(0),
 	  mBandWidth(0),
       quitButton (0)
@@ -234,7 +234,7 @@ MainComponent::MainComponent ()
 
 }
 
-MainComponent::~MainComponent()
+FrequencyBandDisplayMainWindow::~FrequencyBandDisplayMainWindow()
 {
 	stopTimer(eTimerId16ms);
 	stopTimer(eTimerId1ms);
@@ -249,7 +249,7 @@ MainComponent::~MainComponent()
 
 }
 
-void MainComponent::OpenSerialPort(void)
+void FrequencyBandDisplayMainWindow::OpenSerialPort(void)
 {
     StringPairArray serialPorts = SerialPort::getSerialPortPaths();
     for (int i = 0; i < serialPorts.size(); ++i)
@@ -281,7 +281,7 @@ void MainComponent::OpenSerialPort(void)
     }
 }
 
-void MainComponent::CloseSerialPort(void)
+void FrequencyBandDisplayMainWindow::CloseSerialPort(void)
 {
     mSerialPortInput = nullptr;
     if (mSerialPort != nullptr)
@@ -292,20 +292,20 @@ void MainComponent::CloseSerialPort(void)
 }
 
 //==============================================================================
-void MainComponent::paint (Graphics& g)
+void FrequencyBandDisplayMainWindow::paint (Graphics& g)
 {
     g.fillAll (Colour (0xffc1d0ff));
 }
 
 const int kQuitButtonWidth = 60;
 const int kQuitButtonHeight = 20;
-void MainComponent::resized()
+void FrequencyBandDisplayMainWindow::resized()
 {
 	UpdateFrequencyBandsGui();
 	quitButton->setBounds(getWidth() - kQuitButtonWidth - 2, getHeight() - kQuitButtonHeight - 2, kQuitButtonWidth, kQuitButtonHeight);
 }
 
-void MainComponent::UpdateFrequencyBandsGui(void)
+void FrequencyBandDisplayMainWindow::UpdateFrequencyBandsGui(void)
 {
 	if (mNumberOfBands > 0)
 		mBandWidth = getWidth() / mNumberOfBands;
@@ -319,7 +319,7 @@ void MainComponent::UpdateFrequencyBandsGui(void)
 		mFrequencyBandMeters[curBinIndex]->setVisible(false);
 }
 
-void MainComponent::buttonClicked (Button* buttonThatWasClicked)
+void FrequencyBandDisplayMainWindow::buttonClicked (Button* buttonThatWasClicked)
 {
     if (buttonThatWasClicked == quitButton)
     {
@@ -328,7 +328,7 @@ void MainComponent::buttonClicked (Button* buttonThatWasClicked)
 }
 
 #define kSerialPortBufferLen 256
-void MainComponent::timerCallback(int timerId)
+void FrequencyBandDisplayMainWindow::timerCallback(int timerId)
 {
 	switch(timerId)
 	{
