@@ -314,15 +314,16 @@ void FrequencyBandDisplayMainWindow::resized()
 
 void FrequencyBandDisplayMainWindow::UpdateFrequencyBandsGui(void)
 {
-	int bandWidth = getWidth() / mNumberOfBands;
+	int bandWidth = getWidth() / (mNumberOfBands + 1);
 
-	for (int curBinIndex = 0; curBinIndex < jmin(mNumberOfBands, MAX_BINS); ++curBinIndex)
+    // resize and make visible
+	for (int curBinIndex = 0; curBinIndex < jmin(mNumberOfBands + 1, MAX_BINS); ++curBinIndex)
 	{
 		mFrequencyBandMeters[curBinIndex]->setVisible(true);
 		mFrequencyBandMeters[curBinIndex]->setBounds(curBinIndex * bandWidth + 2, 2, bandWidth - 2, quitButton->getY() - 4);
 	}
     // hide unneeded meters
-	for (int curBinIndex = jmin(mNumberOfBands, MAX_BINS); curBinIndex < MAX_BINS; ++curBinIndex)
+	for (int curBinIndex = jmin(mNumberOfBands + 1, MAX_BINS); curBinIndex < MAX_BINS; ++curBinIndex)
 		mFrequencyBandMeters[curBinIndex]->setVisible(false);
 }
 
@@ -488,18 +489,24 @@ void FrequencyBandDisplayMainWindow::timerCallback(int timerId)
             
 		case eTimerId60FPSTimer :
 		{
+            int total = 0;
 			for (int curBinIndex = 0; curBinIndex < jmin(mNumberOfBands, MAX_BINS); ++curBinIndex)
 			{
-                int frequencyBandValue = jmax(mFrequencyBandData[curBinIndex], 0);
+                int frequencyBandValue = 0;
                 {
                     const ScopedLock scopedLock(mFrequencyBandDataLock);
-                    mFrequencyBandMeters[curBinIndex]->SetMeterValue((float)frequencyBandValue/(float)kInputMax);
+                    frequencyBandValue = jmax(mFrequencyBandData[curBinIndex], 0);
                 }
+                mFrequencyBandMeters[curBinIndex]->SetMeterValue((float)frequencyBandValue/(float)kInputMax);
+                total += (frequencyBandValue / (mNumberOfBands / 2));
+                
                 {
                     const ScopedLock scopedLock(mFrequencyBandLabelLock);
                     mFrequencyBandMeters[curBinIndex]->SetMeterLabel(mFrequencyBandLabels[curBinIndex]);
                 }
 			}
+            mFrequencyBandMeters[mNumberOfBands]->SetMeterValue((float)total/(float)kInputMax);
+            mFrequencyBandMeters[mNumberOfBands]->SetMeterLabel("Total");
 		}
 		break;
 	}
