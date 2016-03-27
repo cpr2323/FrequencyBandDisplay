@@ -228,7 +228,7 @@ MainComponent::MainComponent ()
 	}
 
 	startTimer(eTimerId1ms, 1);
-	startTimer(eTimerId20ms, 20);
+	startTimer(eTimerId16ms, 16);
 
     setSize (900, 300);
 
@@ -236,7 +236,7 @@ MainComponent::MainComponent ()
 
 MainComponent::~MainComponent()
 {
-	stopTimer(eTimerId20ms);
+	stopTimer(eTimerId16ms);
 	stopTimer(eTimerId1ms);
 
     CloseSerialPort();
@@ -301,11 +301,11 @@ const int kQuitButtonWidth = 60;
 const int kQuitButtonHeight = 20;
 void MainComponent::resized()
 {
-	UpdateBinDisplay();
+	UpdateFrequencyBandsGui();
 	quitButton->setBounds(getWidth() - kQuitButtonWidth - 2, getHeight() - kQuitButtonHeight - 2, kQuitButtonWidth, kQuitButtonHeight);
 }
 
-void MainComponent::UpdateBinDisplay(void)
+void MainComponent::UpdateFrequencyBandsGui(void)
 {
 	if (mNumberOfBands > 0)
 		mBandWidth = getWidth() / mNumberOfBands;
@@ -313,7 +313,7 @@ void MainComponent::UpdateBinDisplay(void)
 	for (int curBinIndex = 0; curBinIndex < jmin(mNumberOfBands, MAX_BINS); ++curBinIndex)
 	{
 		mFrequencyBandMeters[curBinIndex]->setVisible(true);
-		mFrequencyBandMeters[curBinIndex]->setBounds(curBinIndex * mBandWidth + 2, 10, mBandWidth - 2, getHeight() * 0.75);
+		mFrequencyBandMeters[curBinIndex]->setBounds(curBinIndex * mBandWidth + 2, 2, mBandWidth - 2, getHeight() * 0.75);
 	}
 	for (int curBinIndex = jmin(mNumberOfBands, MAX_BINS); curBinIndex < MAX_BINS; ++curBinIndex)
 		mFrequencyBandMeters[curBinIndex]->setVisible(false);
@@ -378,38 +378,23 @@ void MainComponent::timerCallback(int timerId)
                                     int expectedByteCount = mRawSerialData.substring(startOfByteCount + 1).getIntValue();
                                     if (expectedByteCount != startOfByteCount + 1)
                                         break;
+                                    
                                     char cmd = mRawSerialData[0];
                                     // skip over command byte
                                     mRawSerialData = mRawSerialData.substring(1);
-                                    
                                     switch (cmd)
                                     {
                                         case kBandData:
                                         {
                                             // count:<comma separated bin data>
                                             // D7:126,100,5,34,79,80,120
-                                            
-                                            String testString(mRawSerialData.substring(0, mRawSerialData.indexOf(":")));
-                                            if (testString.isEmpty() || !testString.containsOnly("0123456789"))
-                                                break;
-                                            
-                                            int commaCount = 0;
-                                            int findOffset = 0;
-                                            String tempString(mRawSerialData);
-                                            int newFindOffset = tempString.indexOf(findOffset, ",");
-                                            while (newFindOffset != -1)
-                                            {
-                                                ++commaCount;
-                                                findOffset = newFindOffset + 1;
-                                                newFindOffset = tempString.indexOf(findOffset, ",");
-                                            }
                                             int binCount = mRawSerialData.getIntValue();
-                                            if (mRawSerialData.containsChar(':') && binCount == 7 && commaCount == 6)
+                                            if (binCount > 0)
                                             {
                                                 if (binCount != mNumberOfBands)
                                                 {
                                                     mNumberOfBands = binCount;
-                                                    UpdateBinDisplay();
+                                                    UpdateFrequencyBandsGui();
                                                     Logger::outputDebugString(String(binCount) + String("************bin count changed************"));
                                                 }
                                                 // skip over bin count and ':' separator
@@ -432,27 +417,13 @@ void MainComponent::timerCallback(int timerId)
                                         {
                                             // count:<comma separated quoted labels data>
                                             // L7:"1Hz","5Hz","10Hz","20Hz","40Hz","80Hz","160Hz"
-                                            String testString(mRawSerialData.substring(0, mRawSerialData.indexOf(":")));
-                                            if (testString.isEmpty() || !testString.containsOnly("0123456789"))
-                                                break;
- 
-                                            int commaCount = 0;
-                                            int findOffset = 0;
-                                            String tempString(mRawSerialData);
-                                            int newFindOffset = tempString.indexOf(findOffset, ",");
-                                            while (newFindOffset != -1)
-                                            {
-                                                ++commaCount;
-                                                findOffset = newFindOffset + 1;
-                                                newFindOffset = tempString.indexOf(findOffset, ",");
-                                            }
                                             int binCount = mRawSerialData.getIntValue();
-                                            if (mRawSerialData.containsChar(':') && binCount == 7 && commaCount == 6)
+                                            if (binCount > 0)
                                             {
                                                 if (binCount != mNumberOfBands)
                                                 {
                                                     mNumberOfBands = binCount;
-                                                    UpdateBinDisplay();
+                                                    UpdateFrequencyBandsGui();
                                                     Logger::outputDebugString(String(binCount) + String(" ************bin count changed************"));
                                                 }
                                                 // skip over bin count and ':' separator
@@ -496,7 +467,7 @@ void MainComponent::timerCallback(int timerId)
 		}
 		break;
 
-		case eTimerId20ms :
+		case eTimerId16ms :
 		{
 			for (int curBinIndex = 0; curBinIndex < jmin(mNumberOfBands, MAX_BINS); ++curBinIndex)
 			{

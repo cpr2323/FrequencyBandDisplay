@@ -24,7 +24,7 @@ public:
 	enum
 	{
 		eTimerId1ms = 0,
-		eTimerId20ms
+		eTimerId16ms
 	};
 
 	void timerCallback (int timerId);
@@ -54,7 +54,7 @@ private:
     String      mFrequencyBandLabels[MAX_BINS];
 	MeterComp*  mFrequencyBandMeters[MAX_BINS];
 
-	void UpdateBinDisplay(void);
+	void UpdateFrequencyBandsGui(void);
 	int mBandWidth;
     //==============================================================================
     TextButton* quitButton;
