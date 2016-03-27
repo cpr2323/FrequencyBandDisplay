@@ -61,7 +61,6 @@ private:
 	int			mFrequencyBandData[MAX_BINS];
     String      mFrequencyBandLabels[MAX_BINS];
 	MeterComp*  mFrequencyBandMeters[MAX_BINS];
-    int mBandWidth;
     TextButton* quitButton;
     
     CriticalSection mFrequencyBandDataLock;

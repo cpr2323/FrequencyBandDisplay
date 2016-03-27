@@ -209,7 +209,6 @@ private:
 FrequencyBandDisplayMainWindow::FrequencyBandDisplayMainWindow ()
     : Thread(String("FrequencyBandDisplayMainWindow")),
       mNumberOfBands(0),
-	  mBandWidth(0),
       quitButton (0),
       mDoGuiResize(false)
 {
@@ -301,7 +300,6 @@ void FrequencyBandDisplayMainWindow::CloseSerialPort(void)
     }
 }
 
-//==============================================================================
 void FrequencyBandDisplayMainWindow::paint (Graphics& g)
 {
     g.fillAll (Colour (0xffc1d0ff));
@@ -316,14 +314,14 @@ void FrequencyBandDisplayMainWindow::resized()
 
 void FrequencyBandDisplayMainWindow::UpdateFrequencyBandsGui(void)
 {
-	if (mNumberOfBands > 0)
-		mBandWidth = getWidth() / mNumberOfBands;
+	int bandWidth = getWidth() / mNumberOfBands;
 
 	for (int curBinIndex = 0; curBinIndex < jmin(mNumberOfBands, MAX_BINS); ++curBinIndex)
 	{
 		mFrequencyBandMeters[curBinIndex]->setVisible(true);
-		mFrequencyBandMeters[curBinIndex]->setBounds(curBinIndex * mBandWidth + 2, 2, mBandWidth - 2, getHeight() * 0.75);
+		mFrequencyBandMeters[curBinIndex]->setBounds(curBinIndex * bandWidth + 2, 2, bandWidth - 2, quitButton->getY() - 4);
 	}
+    // hide unneeded meters
 	for (int curBinIndex = jmin(mNumberOfBands, MAX_BINS); curBinIndex < MAX_BINS; ++curBinIndex)
 		mFrequencyBandMeters[curBinIndex]->setVisible(false);
 }
@@ -481,8 +479,8 @@ void FrequencyBandDisplayMainWindow::timerCallback(int timerId)
         {
             if (mDoGuiResize)
             {
-                UpdateFrequencyBandsGui();
                 quitButton->setBounds(getWidth() - kQuitButtonWidth - 2, getHeight() - kQuitButtonHeight - 2, kQuitButtonWidth, kQuitButtonHeight);
+                UpdateFrequencyBandsGui();
                 mDoGuiResize = false;
             }
         }
