@@ -3,8 +3,8 @@
 #define kBPS 115200
 #define kInputMax 1023
 
-#ifdef JUCE_WIN
-#define kSerialPortName "\\\\.\\COM3"
+#ifdef JUCE_WINDOWS
+#define kSerialPortName "\\\\.\\COM4"
 #endif
 
 #ifdef JUCE_MAC
@@ -349,7 +349,10 @@ void FrequencyBandDisplayMainWindow::run()
             
             bytesRead = mSerialPortInput->read(incomingData, kSerialPortBufferLen);
             if (bytesRead < 1)
+            {
+                wait(1);
                 continue;
+            }
             else
             {
                 // parse incoming data
@@ -467,6 +470,10 @@ void FrequencyBandDisplayMainWindow::run()
                     ++curByteOffset;
                 }
             }
+        }
+        else
+        {
+            wait(1);
         }
     }
 }

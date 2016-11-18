@@ -2,7 +2,7 @@
 
 <JUCERPROJECT id="DSC9bD" name="FrequencyBandDisplay" projectType="guiapp"
               version="2.0.0" bundleIdentifier="com.omohmproductions.frequencybanddisplay"
-              includeBinaryInAppConfig="1" jucerVersion="3.2.0">
+              includeBinaryInAppConfig="1" jucerVersion="4.3.0">
   <MAINGROUP id="dFQuBD" name="FrequencyBandDisplay">
     <GROUP id="{48CF2469-2F47-35BD-EE62-8796E03DBFB9}" name="Source">
       <FILE id="UoJBG5" name="FrequencyBandDisplayMainWindow.cpp" compile="1"
@@ -13,30 +13,6 @@
     </GROUP>
   </MAINGROUP>
   <EXPORTFORMATS>
-    <VS2013 targetFolder="Builds/VisualStudio2013">
-      <CONFIGURATIONS>
-        <CONFIGURATION name="Debug" winWarningLevel="4" generateManifest="1" winArchitecture="32-bit"
-                       isDebug="1" optimisation="1" targetName="FrequencyBandDisplay"/>
-        <CONFIGURATION name="Release" winWarningLevel="4" generateManifest="1" winArchitecture="32-bit"
-                       isDebug="0" optimisation="2" targetName="FrequencyBandDisplay"/>
-      </CONFIGURATIONS>
-      <MODULEPATHS>
-        <MODULEPATH id="juce_core" path="../juce/modules"/>
-        <MODULEPATH id="juce_events" path="../juce/modules"/>
-        <MODULEPATH id="juce_graphics" path="../juce/modules"/>
-        <MODULEPATH id="juce_data_structures" path="../juce/modules"/>
-        <MODULEPATH id="juce_gui_basics" path="../juce/modules"/>
-        <MODULEPATH id="juce_gui_extra" path="../juce/modules"/>
-        <MODULEPATH id="juce_cryptography" path="../juce/modules"/>
-        <MODULEPATH id="juce_video" path="../juce/modules"/>
-        <MODULEPATH id="juce_opengl" path="../juce/modules"/>
-        <MODULEPATH id="juce_audio_basics" path="../juce/modules"/>
-        <MODULEPATH id="juce_audio_devices" path="../juce/modules"/>
-        <MODULEPATH id="juce_audio_formats" path="../juce/modules"/>
-        <MODULEPATH id="juce_audio_processors" path="../juce/modules"/>
-        <MODULEPATH id="juce_serialport" path="../oonet"/>
-      </MODULEPATHS>
-    </VS2013>
     <XCODE_MAC targetFolder="Builds/MacOSX">
       <CONFIGURATIONS>
         <CONFIGURATION name="Debug" osxSDK="default" osxCompatibility="default" osxArchitecture="default"
@@ -58,9 +34,33 @@
         <MODULEPATH id="juce_audio_formats" path="../../juce"/>
         <MODULEPATH id="juce_audio_devices" path="../../juce"/>
         <MODULEPATH id="juce_audio_basics" path="../../juce"/>
-        <MODULEPATH id="juce_serialport" path="../oonet"/>
+        <MODULEPATH id="juce_serialport" path="../../juce"/>
       </MODULEPATHS>
     </XCODE_MAC>
+    <VS2015 targetFolder="Builds/VisualStudio2015">
+      <CONFIGURATIONS>
+        <CONFIGURATION name="Debug" winWarningLevel="4" generateManifest="1" winArchitecture="32-bit"
+                       isDebug="1" optimisation="1" targetName="FrequencyBandDisplay"/>
+        <CONFIGURATION name="Release" winWarningLevel="4" generateManifest="1" winArchitecture="32-bit"
+                       isDebug="0" optimisation="3" targetName="FrequencyBandDisplay"/>
+      </CONFIGURATIONS>
+      <MODULEPATHS>
+        <MODULEPATH id="juce_video" path="../juce/modules"/>
+        <MODULEPATH id="juce_serialport" path="..\oonet\juce_serialport"/>
+        <MODULEPATH id="juce_opengl" path="../juce/modules"/>
+        <MODULEPATH id="juce_gui_extra" path="../juce/modules"/>
+        <MODULEPATH id="juce_gui_basics" path="../juce/modules"/>
+        <MODULEPATH id="juce_graphics" path="../juce/modules"/>
+        <MODULEPATH id="juce_events" path="../juce/modules"/>
+        <MODULEPATH id="juce_data_structures" path="../juce/modules"/>
+        <MODULEPATH id="juce_cryptography" path="../juce/modules"/>
+        <MODULEPATH id="juce_core" path="../juce/modules"/>
+        <MODULEPATH id="juce_audio_processors" path="../juce/modules"/>
+        <MODULEPATH id="juce_audio_formats" path="../juce/modules"/>
+        <MODULEPATH id="juce_audio_devices" path="../juce/modules"/>
+        <MODULEPATH id="juce_audio_basics" path="../juce/modules"/>
+      </MODULEPATHS>
+    </VS2015>
   </EXPORTFORMATS>
   <MODULES>
     <MODULES id="juce_audio_basics" showAllCode="1" useLocalCopy="1"/>
