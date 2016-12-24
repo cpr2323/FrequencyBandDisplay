@@ -21,8 +21,6 @@
                        isDebug="0" optimisation="3" targetName="FrequencyBandDisplay"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
-        <MODULEPATH id="juce_video" path="../../juce"/>
-        <MODULEPATH id="juce_opengl" path="../../juce"/>
         <MODULEPATH id="juce_gui_extra" path="../../juce"/>
         <MODULEPATH id="juce_gui_basics" path="../../juce"/>
         <MODULEPATH id="juce_graphics" path="../../juce"/>
@@ -30,10 +28,6 @@
         <MODULEPATH id="juce_data_structures" path="../../juce"/>
         <MODULEPATH id="juce_cryptography" path="../../juce"/>
         <MODULEPATH id="juce_core" path="../../juce"/>
-        <MODULEPATH id="juce_audio_processors" path="../../juce"/>
-        <MODULEPATH id="juce_audio_formats" path="../../juce"/>
-        <MODULEPATH id="juce_audio_devices" path="../../juce"/>
-        <MODULEPATH id="juce_audio_basics" path="../../juce"/>
         <MODULEPATH id="juce_serialport" path="../../juce"/>
       </MODULEPATHS>
     </XCODE_MAC>
@@ -45,9 +39,7 @@
                        isDebug="0" optimisation="3" targetName="FrequencyBandDisplay"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
-        <MODULEPATH id="juce_video" path="../juce/modules"/>
         <MODULEPATH id="juce_serialport" path="..\oonet\juce_serialport"/>
-        <MODULEPATH id="juce_opengl" path="../juce/modules"/>
         <MODULEPATH id="juce_gui_extra" path="../juce/modules"/>
         <MODULEPATH id="juce_gui_basics" path="../juce/modules"/>
         <MODULEPATH id="juce_graphics" path="../juce/modules"/>
@@ -55,18 +47,10 @@
         <MODULEPATH id="juce_data_structures" path="../juce/modules"/>
         <MODULEPATH id="juce_cryptography" path="../juce/modules"/>
         <MODULEPATH id="juce_core" path="../juce/modules"/>
-        <MODULEPATH id="juce_audio_processors" path="../juce/modules"/>
-        <MODULEPATH id="juce_audio_formats" path="../juce/modules"/>
-        <MODULEPATH id="juce_audio_devices" path="../juce/modules"/>
-        <MODULEPATH id="juce_audio_basics" path="../juce/modules"/>
       </MODULEPATHS>
     </VS2015>
   </EXPORTFORMATS>
   <MODULES>
-    <MODULES id="juce_audio_basics" showAllCode="1" useLocalCopy="1"/>
-    <MODULES id="juce_audio_devices" showAllCode="1" useLocalCopy="1"/>
-    <MODULES id="juce_audio_formats" showAllCode="1" useLocalCopy="1"/>
-    <MODULES id="juce_audio_processors" showAllCode="1" useLocalCopy="1"/>
     <MODULES id="juce_core" showAllCode="1" useLocalCopy="1"/>
     <MODULES id="juce_cryptography" showAllCode="1" useLocalCopy="1"/>
     <MODULES id="juce_data_structures" showAllCode="1" useLocalCopy="1"/>
@@ -74,9 +58,7 @@
     <MODULES id="juce_graphics" showAllCode="1" useLocalCopy="1"/>
     <MODULES id="juce_gui_basics" showAllCode="1" useLocalCopy="1"/>
     <MODULES id="juce_gui_extra" showAllCode="1" useLocalCopy="1"/>
-    <MODULES id="juce_opengl" showAllCode="1" useLocalCopy="1"/>
     <MODULES id="juce_serialport" showAllCode="1" useLocalCopy="1"/>
-    <MODULES id="juce_video" showAllCode="1" useLocalCopy="1"/>
   </MODULES>
   <JUCEOPTIONS/>
 </JUCERPROJECT>
