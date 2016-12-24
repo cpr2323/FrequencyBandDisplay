@@ -1,3 +1,7 @@
+#include <vector>
+#include <map>
+using namespace std;
+
 #include "FrequencyBandDisplayMainWindow.h"
 
 #define kBPS 115200
@@ -10,6 +14,76 @@
 #ifdef JUCE_MAC
 #define kSerialPortName "/dev/cu.usbmodem1421"
 #endif
+
+/////////////////////////////////////////////////////////////////////////////////////
+#define kSerialPortListMonitorSleepTime 1000
+class cSerialPortListMonitor : public Thread
+{
+public:
+    cSerialPortListMonitor(void);
+    ~cSerialPortListMonitor(void);
+    bool HasListChanged(void);
+    StringPairArray GetSerialPortList(void);
+    void SetSleepTime(int sleepTime);
+    void run() override;
+
+private:
+    CriticalSection mDataLock;
+    StringPairArray mSerialPortNames;
+    int             mSleepTime;
+    bool            mListChanged;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// cSerialPortListMonitor
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+cSerialPortListMonitor::cSerialPortListMonitor(void)
+    : Thread(String("Serial Port Monitor")),
+    mSleepTime(kSerialPortListMonitorSleepTime),
+    mListChanged(false)
+{
+    startThread();
+}
+
+cSerialPortListMonitor::~cSerialPortListMonitor(void)
+{
+    stopThread(5000);
+}
+
+StringPairArray cSerialPortListMonitor::GetSerialPortList(void)
+{
+    ScopedLock dataLock(mDataLock);
+    mListChanged = false;
+    return mSerialPortNames;
+}
+
+void cSerialPortListMonitor::SetSleepTime(int sleepTime)
+{
+    mSleepTime = sleepTime;
+}
+
+bool cSerialPortListMonitor::HasListChanged(void)
+{
+    return mListChanged;
+}
+
+// thread for keeping an up to date list of serial port names
+void cSerialPortListMonitor::run()
+{
+    while (!threadShouldExit())
+    {
+        // wake up every mSleepTime to check the serial port list
+        sleep(mSleepTime);
+
+        StringPairArray serialPortList(SerialPort::getSerialPortPaths());
+        ScopedLock dataLock(mDataLock);
+        if ((serialPortList.size() != mSerialPortNames.size()) || serialPortList != mSerialPortNames)
+        {
+            mSerialPortNames = serialPortList;
+            mListChanged = true;
+        }
+    }
+}
 
 /////////////////////////////////////////////////////////////////////////////////
 // Data format
@@ -139,6 +213,7 @@ public:
         addAndMakeVisible(mMeterLabel);
         mMeterLabel.setJustificationType(Justification::centredTop);
         mFilteredMeterValue.Config(0.9);
+        setOpaque(true);
 	}
 
 	void paint(Graphics& g) override
@@ -205,20 +280,94 @@ private:
 };
 
 ///////////////////////////////////////////////////////
+//
+class SerialPortMenu : public Label
+{
+public:
+    SerialPortMenu(String _componentName, String _label, ApplicationProperties* applicationProperties)
+        : Label(_componentName, _label),
+          mApplicationProperties(applicationProperties)
+    {
+        SetSelectedPort(mApplicationProperties->getUserSettings()->getValue("UsbPortName"));
+        mSerialPortListMonitorThread = new cSerialPortListMonitor;
+    }
+
+    void SetSelectedPort(String deviceName)
+    {
+        mApplicationProperties->getUserSettings()->setValue("UsbPortName", deviceName);
+        mSelectedPort = deviceName;
+        if (deviceName.length() != 0)
+            setText(mSelectedPort, NotificationType::dontSendNotification);
+        else
+            setText("<none>", NotificationType::dontSendNotification);
+    }
+
+    String GetSelectedPort(void )
+    {
+        return mSelectedPort;
+    }
+
+    void mouseEnter(const MouseEvent &event) override
+    {
+        setColour(textColourId, Colours::green);
+    }
+
+    void mouseExit(const MouseEvent &event) override
+    {
+        setColour(textColourId, Colours::black);
+    }
+
+    void mouseDown(const MouseEvent &event) override
+    {
+        PopupMenu menu;
+
+        StringPairArray serialPortList = mSerialPortListMonitorThread->GetSerialPortList();
+        if (serialPortList.size() == 0)
+        {
+            menu.addItem(eUsbPortSelectNoneAvail, "<none>");
+        }
+        else
+        {
+            bool selectedPortFound;
+            for (unsigned int curSerialPortListIndex = 0; curSerialPortListIndex < serialPortList.size(); ++curSerialPortListIndex)
+            {
+
+                menu.addItem(curSerialPortListIndex + 1, serialPortList.getAllKeys()[curSerialPortListIndex], true, serialPortList.getAllValues()[curSerialPortListIndex] == mSelectedPort);
+            }
+        }
+
+        int serialPortSelected = menu.show();
+
+        if (serialPortSelected > 0)
+            if (serialPortList.getAllValues()[serialPortSelected - 1] != mSelectedPort)
+                SetSelectedPort(serialPortList.getAllValues()[serialPortSelected - 1]);
+            else
+                SetSelectedPort("");
+    }
+
+private:
+    ScopedPointer<cSerialPortListMonitor> mSerialPortListMonitorThread;
+    String                                mSelectedPort;
+    ApplicationProperties*                mApplicationProperties;
+};
+
+
+///////////////////////////////////////////////////////
 // FrequencyBandDisplayMainWindow
-FrequencyBandDisplayMainWindow::FrequencyBandDisplayMainWindow ()
+FrequencyBandDisplayMainWindow::FrequencyBandDisplayMainWindow (ApplicationProperties* applicationProperties)
     : Thread(String("FrequencyBandDisplayMainWindow")),
       mNumberOfBands(0),
-      quitButton (0),
-      mDoGuiResize(false)
+      mQuitButton (0),
+      mDoGuiResize(false),
+      mApplicationProperties(applicationProperties)
 {
-    addAndMakeVisible (quitButton = new TextButton (String::empty));
-    quitButton->setButtonText ("Quit");
-    quitButton->addListener (this);
+    addAndMakeVisible(mComPortLabel = new Label("ComPortLabel", "COM Port:"));
+    addAndMakeVisible(mComPortName = new SerialPortMenu("ComPortName", "", mApplicationProperties));
+    addAndMakeVisible (mQuitButton = new TextButton (String::empty));
+    mQuitButton->setButtonText ("Quit");
+    mQuitButton->addListener (this);
 
 	mParseState = eParseStateIdle;
-
-    OpenSerialPort();
 
 	for (int curBinIndex = 0; curBinIndex < MAX_BINS; ++curBinIndex)
 	{
@@ -236,7 +385,10 @@ FrequencyBandDisplayMainWindow::FrequencyBandDisplayMainWindow ()
     startTimer(eTimerIdFastTimer, 1);
     
     // start the GUI update timeer for updating the GUI
-    startTimer(eTimerId60FPSTimer, 16);
+    startTimer(eTimerIdGuiUpdateTimer, 33);
+
+    // start the serial port open timer
+    startTimer(eTimerOpenSerialPort, 1000);
 
     setSize (900, 300);
 
@@ -245,7 +397,7 @@ FrequencyBandDisplayMainWindow::FrequencyBandDisplayMainWindow ()
 FrequencyBandDisplayMainWindow::~FrequencyBandDisplayMainWindow()
 {
     stopThread(500);
-	stopTimer(eTimerId60FPSTimer);
+	stopTimer(eTimerIdGuiUpdateTimer);
 	stopTimer(eTimerIdFastTimer);
     
     CloseSerialPort();
@@ -254,39 +406,37 @@ FrequencyBandDisplayMainWindow::~FrequencyBandDisplayMainWindow()
 	{
 		deleteAndZero(mFrequencyBandMeters[curBinIndex]);
 	}
-    deleteAndZero (quitButton);
+    deleteAndZero (mQuitButton);
+    deleteAndZero (mComPortLabel);
+    deleteAndZero(mComPortName);
 
 }
 
 void FrequencyBandDisplayMainWindow::OpenSerialPort(void)
 {
-    StringPairArray serialPorts = SerialPort::getSerialPortPaths();
-    for (int i = 0; i < serialPorts.size(); ++i)
-    {
-        String deviceName = serialPorts.getAllValues()[i];
-
-        Logger::outputDebugString(deviceName);
-    }
+    String serialPortName = mComPortName->GetSelectedPort();
 
     mSerialPort = new SerialPort();
-    String usbPortName(kSerialPortName);
-    bool opened = mSerialPort->open(usbPortName);
+    bool opened = mSerialPort->open(serialPortName);
 
     if (opened)
     {
         SerialPortConfig serialPortConfig;
         mSerialPort->getConfig(serialPortConfig);
-        serialPortConfig.bps      = kBPS;
+        serialPortConfig.bps = kBPS;
         serialPortConfig.databits = 8;
-        serialPortConfig.parity   = SerialPortConfig::SERIALPORT_PARITY_NONE;
+        serialPortConfig.parity = SerialPortConfig::SERIALPORT_PARITY_NONE;
         serialPortConfig.stopbits = SerialPortConfig::STOPBITS_1;
         mSerialPort->setConfig(serialPortConfig);
-    
+
         mSerialPortInput = new SerialPortInputStream(mSerialPort);
+        mCurrentSerialPortName = serialPortName;
     }
     else
     {
         // report error
+        mComPortName->setText("", NotificationType::dontSendNotification);
+        Logger::outputDebugString(String("Unable to open serial port:") + serialPortName);
     }
 }
 
@@ -320,7 +470,7 @@ void FrequencyBandDisplayMainWindow::UpdateFrequencyBandsGui(void)
 	for (int curBinIndex = 0; curBinIndex < jmin(mNumberOfBands + 1, MAX_BINS); ++curBinIndex)
 	{
 		mFrequencyBandMeters[curBinIndex]->setVisible(true);
-		mFrequencyBandMeters[curBinIndex]->setBounds(curBinIndex * bandWidth + 2, 2, bandWidth - 2, quitButton->getY() - 4);
+		mFrequencyBandMeters[curBinIndex]->setBounds(curBinIndex * bandWidth + 2, 2, bandWidth - 2, mQuitButton->getY() - 4);
 	}
     // hide unneeded meters
 	for (int curBinIndex = jmin(mNumberOfBands + 1, MAX_BINS); curBinIndex < MAX_BINS; ++curBinIndex)
@@ -329,7 +479,7 @@ void FrequencyBandDisplayMainWindow::UpdateFrequencyBandsGui(void)
 
 void FrequencyBandDisplayMainWindow::buttonClicked (Button* buttonThatWasClicked)
 {
-    if (buttonThatWasClicked == quitButton)
+    if (buttonThatWasClicked == mQuitButton)
     {
         JUCEApplication::quit();
     }
@@ -398,6 +548,7 @@ void FrequencyBandDisplayMainWindow::run()
                                             if (binCount != mNumberOfBands)
                                             {
                                                 mNumberOfBands = binCount;
+                                                mDoGuiResize = true;
                                                 Logger::outputDebugString(String(binCount) + String("************bin count changed************"));
                                             }
                                             // skip over bin count and ':' separator
@@ -429,6 +580,7 @@ void FrequencyBandDisplayMainWindow::run()
                                             if (binCount != mNumberOfBands)
                                             {
                                                 mNumberOfBands = binCount;
+                                                mDoGuiResize = true;
                                                 Logger::outputDebugString(String(binCount) + String(" ************bin count changed************"));
                                             }
                                             // skip over bin count and ':' separator
@@ -487,14 +639,35 @@ void FrequencyBandDisplayMainWindow::timerCallback(int timerId)
         {
             if (mDoGuiResize)
             {
-                quitButton->setBounds(getWidth() - kQuitButtonWidth - 2, getHeight() - kQuitButtonHeight - 2, kQuitButtonWidth, kQuitButtonHeight);
+                const int kComPortLabelWidth = 55;
+                const int kComPostTextSpacing = 2;
+                mComPortLabel->setBounds(kComPostTextSpacing, getHeight() - 20 - kComPostTextSpacing, kComPortLabelWidth, 20);
+                mComPortName->setBounds(kComPortLabelWidth, getHeight() - 20 - kComPostTextSpacing, 100, 20);
+                mQuitButton->setBounds(getWidth() - kQuitButtonWidth - 2, getHeight() - kQuitButtonHeight - 2, kQuitButtonWidth, kQuitButtonHeight);
                 UpdateFrequencyBandsGui();
                 mDoGuiResize = false;
             }
         }
         break;
             
-		case eTimerId60FPSTimer :
+        case eTimerOpenSerialPort :
+        {
+            String serialPortName = mComPortName->GetSelectedPort();
+
+            if (serialPortName.length() != 0)
+            {
+                if ((mSerialPort == nullptr) || mCurrentSerialPortName != serialPortName)
+                    OpenSerialPort();
+            }
+            else if (mSerialPort != nullptr)
+            {
+                CloseSerialPort();
+            }
+
+        }
+        break;
+
+		case eTimerIdGuiUpdateTimer:
 		{
             int total = 0;
 			for (int curBinIndex = 0; curBinIndex < jmin(mNumberOfBands, MAX_BINS); ++curBinIndex)
@@ -505,13 +678,18 @@ void FrequencyBandDisplayMainWindow::timerCallback(int timerId)
                     frequencyBandValue = jmax(mFrequencyBandData[curBinIndex], 0);
                 }
                 mFrequencyBandMeters[curBinIndex]->SetMeterValue((float)frequencyBandValue/(float)kInputMax);
-                total += (frequencyBandValue / (mNumberOfBands / 2));
-                
+                total += frequencyBandValue;
+                //total += (frequencyBandValue / (mNumberOfBands / 2));
+
                 {
                     const ScopedLock scopedLock(mFrequencyBandLabelLock);
                     mFrequencyBandMeters[curBinIndex]->SetMeterLabel(mFrequencyBandLabels[curBinIndex]);
                 }
 			}
+
+            if (mNumberOfBands > 0)
+                total /= mNumberOfBands;
+
             mFrequencyBandMeters[mNumberOfBands]->SetMeterValue((float)total/(float)kInputMax);
             mFrequencyBandMeters[mNumberOfBands]->SetMeterLabel("Total");
 		}

@@ -3,8 +3,17 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 class MeterComp;
+class cSerialPortListMonitor;
+class SerialPortMenu;
 
 #define MAX_BINS 128
+
+enum MenuIDs
+{
+    eUsbPortSelectStart = 1500,
+    eUsbPortSelectEnd = 1598,
+    eUsbPortSelectNoneAvail = 1599,
+};
 
 class FrequencyBandDisplayMainWindow  : public Component,
                                         public ButtonListener,
@@ -13,7 +22,7 @@ class FrequencyBandDisplayMainWindow  : public Component,
 {
 public:
     //==============================================================================
-    FrequencyBandDisplayMainWindow ();
+    FrequencyBandDisplayMainWindow (ApplicationProperties* applicationProperties);
     ~FrequencyBandDisplayMainWindow();
 
     //==============================================================================
@@ -24,7 +33,8 @@ private:
     enum
     {
         eTimerIdFastTimer = 0,
-        eTimerId60FPSTimer
+        eTimerIdGuiUpdateTimer,
+        eTimerOpenSerialPort
     };
 
     enum
@@ -32,6 +42,7 @@ private:
         eParseStateIdle = 0,
         eParseStateReading,
     };
+
 
     #define kBeginPacket '<'
     #define kEndPacket   '>'
@@ -52,6 +63,7 @@ private:
     void UpdateFrequencyBandsGui(void);
 
     /////////////////////////////
+    String                               mCurrentSerialPortName;
     ScopedPointer<SerialPort>            mSerialPort;
     ScopedPointer<SerialPortInputStream> mSerialPortInput;
 	int			mParseState;
@@ -61,12 +73,16 @@ private:
 	int			mFrequencyBandData[MAX_BINS];
     String      mFrequencyBandLabels[MAX_BINS];
 	MeterComp*  mFrequencyBandMeters[MAX_BINS];
-    TextButton* quitButton;
+    TextButton* mQuitButton;
+    Label*      mComPortLabel;
+    SerialPortMenu* mComPortName;
     
     CriticalSection mFrequencyBandDataLock;
     CriticalSection mFrequencyBandLabelLock;
-    
+
     bool mDoGuiResize;
+
+    ApplicationProperties* mApplicationProperties;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FrequencyBandDisplayMainWindow)
 };
