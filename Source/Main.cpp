@@ -11,14 +11,11 @@ class FrequencyDisplayWindow  : public DocumentWindow
 {
 public:
     //==============================================================================
-    FrequencyDisplayWindow(void)
-        : DocumentWindow ("Frequency Display",
-                          Colours::lightgrey,
-                          DocumentWindow::allButtons,
-                          true)
+    FrequencyDisplayWindow(String name, ApplicationProperties* applicationProperties)
+        : DocumentWindow (name, Colours::lightgrey, DocumentWindow::allButtons, true)
     {
         // Create an instance of our main content component, and add it to our window..
-        setContentOwned (new FrequencyBandDisplayMainWindow(), true);
+        setContentOwned (new FrequencyBandDisplayMainWindow(applicationProperties), true);
 
         // Centre the window on the screen
         centreWithSize (getWidth(), getHeight());
@@ -62,16 +59,26 @@ public:
     //==============================================================================
     void initialise (const String& commandLine)
     {
-        // For this demo, we'll just create the main window...
-        frequencyDisplayWindow = new FrequencyDisplayWindow();
+        mApplicationProperties = new ApplicationProperties();
 
-        /*  ..and now return, which will fall into to the main event
-            dispatch loop, and this will run until something calls
-            JUCEAppliction::quit().
+        PropertiesFile::Options configuratorPropertiesOptions;
+        configuratorPropertiesOptions.applicationName = getApplicationName();
+        configuratorPropertiesOptions.filenameSuffix = "settings";
+        configuratorPropertiesOptions.millisecondsBeforeSaving = 1000;
+        configuratorPropertiesOptions.storageFormat = PropertiesFile::storeAsXML;
 
-            In this case, JUCEAppliction::quit() will be called by the
-            hello world window being clicked.
-        */
+        // this is obviously only useful in OSX, but should neither help nor harm any
+        // other OS, so we won't bother qualifying it for OSX only.
+        configuratorPropertiesOptions.osxLibrarySubFolder = "Application Support";
+
+        mApplicationProperties->setStorageParameters(configuratorPropertiesOptions);
+
+        if (commandLine.isNotEmpty())
+        {
+            processCommandLine(commandLine);
+        }
+
+        mFrequencyDisplayWindow = new FrequencyDisplayWindow(getApplicationName(), mApplicationProperties);
     }
 
     void shutdown()
@@ -80,7 +87,7 @@ public:
 
         // The helloWorldWindow variable is a ScopedPointer, so setting it to a null
         // pointer will delete the window.
-        frequencyDisplayWindow = nullptr;
+        mFrequencyDisplayWindow = nullptr;
     }
 
     //==============================================================================
@@ -106,7 +113,17 @@ public:
     }
 
 private:
-    ScopedPointer<FrequencyDisplayWindow> frequencyDisplayWindow;
+    void processCommandLine(const String& commandLine)
+    {
+        StringArray args;
+        args.addTokens(commandLine, true);
+        args.trim();
+
+        //if (matchArgument(args[0], "help")) showHelp();
+    }
+
+    ScopedPointer<FrequencyDisplayWindow> mFrequencyDisplayWindow;
+    ScopedPointer<ApplicationProperties>  mApplicationProperties;
 };
 
 
