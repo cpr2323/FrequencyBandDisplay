@@ -5,6 +5,14 @@
               includeBinaryInAppConfig="1" jucerVersion="4.3.1">
   <MAINGROUP id="dFQuBD" name="FrequencyBandDisplay">
     <GROUP id="{48CF2469-2F47-35BD-EE62-8796E03DBFB9}" name="Source">
+      <FILE id="jb2g3E" name="cPeakMeterWithHold.h" compile="0" resource="0"
+            file="Source/cPeakMeterWithHold.h"/>
+      <FILE id="WnqoyP" name="cSerialPortListMonitor.cpp" compile="1" resource="0"
+            file="Source/cSerialPortListMonitor.cpp"/>
+      <FILE id="lABeLZ" name="cSerialPortListMonitor.h" compile="0" resource="0"
+            file="Source/cSerialPortListMonitor.h"/>
+      <FILE id="IbGIJI" name="cSinglePoleFilter.h" compile="0" resource="0"
+            file="Source/cSinglePoleFilter.h"/>
       <FILE id="b49LLz" name="FrequencyBandDevice.cpp" compile="1" resource="0"
             file="Source/FrequencyBandDevice.cpp"/>
       <FILE id="Wd9BwU" name="FrequencyBandDevice.h" compile="0" resource="0"
@@ -14,6 +22,11 @@
       <FILE id="Yn1jqS" name="FrequencyBandDisplayMainWindow.h" compile="0"
             resource="0" file="Source/FrequencyBandDisplayMainWindow.h"/>
       <FILE id="GZSo0R" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
+      <FILE id="qYoHAt" name="MeterComp.h" compile="0" resource="0" file="Source/MeterComp.h"/>
+      <FILE id="mv9f93" name="SerialPortMenu.cpp" compile="1" resource="0"
+            file="Source/SerialPortMenu.cpp"/>
+      <FILE id="DdNf0P" name="SerialPortMenu.h" compile="0" resource="0"
+            file="Source/SerialPortMenu.h"/>
     </GROUP>
   </MAINGROUP>
   <EXPORTFORMATS>

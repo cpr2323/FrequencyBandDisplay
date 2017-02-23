@@ -19,10 +19,10 @@ public:
     String   GetBandLabel(uint16_t bandIndex);
 
 private:
-#define kBeginPacket '<'
-#define kEndPacket   '>'
-#define kBandData    'D'
-#define kBandLabels  'L'
+    #define kBeginPacket '<'
+    #define kEndPacket   '>'
+    #define kBandData    'D'
+    #define kBandLabels  'L'
 
     enum
     {

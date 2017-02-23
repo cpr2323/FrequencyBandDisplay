@@ -8,13 +8,6 @@ class MeterComp;
 class cSerialPortListMonitor;
 class SerialPortMenu;
 
-enum MenuIDs
-{
-    eUsbPortSelectStart = 1500,
-    eUsbPortSelectEnd = 1598,
-    eUsbPortSelectNoneAvail = 1599,
-};
-
 class FrequencyBandDisplayMainWindow  : public Component,
                                         public ButtonListener,
                                         public MultiTimer
@@ -30,7 +23,7 @@ private:
     /////////////////////////////
     enum
     {
-        eTimerIdFastTimer = 0,
+        eTimerIdResizeThrottleTimer = 0,
         eTimerIdGuiUpdateTimer,
         eTimerCheckSerialPortChange
     };
