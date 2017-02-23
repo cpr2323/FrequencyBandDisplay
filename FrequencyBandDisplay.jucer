@@ -2,9 +2,13 @@
 
 <JUCERPROJECT id="DSC9bD" name="FrequencyBandDisplay" projectType="guiapp"
               version="2.0.0" bundleIdentifier="com.omohmproductions.frequencybanddisplay"
-              includeBinaryInAppConfig="1" jucerVersion="4.3.0">
+              includeBinaryInAppConfig="1" jucerVersion="4.3.1">
   <MAINGROUP id="dFQuBD" name="FrequencyBandDisplay">
     <GROUP id="{48CF2469-2F47-35BD-EE62-8796E03DBFB9}" name="Source">
+      <FILE id="b49LLz" name="FrequencyBandDevice.cpp" compile="1" resource="0"
+            file="Source/FrequencyBandDevice.cpp"/>
+      <FILE id="Wd9BwU" name="FrequencyBandDevice.h" compile="0" resource="0"
+            file="Source/FrequencyBandDevice.h"/>
       <FILE id="UoJBG5" name="FrequencyBandDisplayMainWindow.cpp" compile="1"
             resource="0" file="Source/FrequencyBandDisplayMainWindow.cpp"/>
       <FILE id="Yn1jqS" name="FrequencyBandDisplayMainWindow.h" compile="0"

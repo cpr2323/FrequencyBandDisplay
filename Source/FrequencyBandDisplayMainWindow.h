@@ -2,11 +2,11 @@
 #define __MAINCOMPONENT_H_7D44AE5B__
 
 #include "../JuceLibraryCode/JuceHeader.h"
+#include "FrequencyBandDevice.h"
+
 class MeterComp;
 class cSerialPortListMonitor;
 class SerialPortMenu;
-
-#define MAX_BINS 128
 
 enum MenuIDs
 {
@@ -17,8 +17,7 @@ enum MenuIDs
 
 class FrequencyBandDisplayMainWindow  : public Component,
                                         public ButtonListener,
-                                        public MultiTimer,
-                                        public Thread
+                                        public MultiTimer
 {
 public:
     //==============================================================================
@@ -27,27 +26,15 @@ public:
 
     //==============================================================================
 
-
 private:
     /////////////////////////////
     enum
     {
         eTimerIdFastTimer = 0,
         eTimerIdGuiUpdateTimer,
-        eTimerOpenSerialPort
+        eTimerCheckSerialPortChange
     };
 
-    enum
-    {
-        eParseStateIdle = 0,
-        eParseStateReading,
-    };
-
-
-    #define kBeginPacket '<'
-    #define kEndPacket   '>'
-    #define kBandData    'D'
-    #define kBandLabels  'L'
 
     /////////////////////////////
     void paint (Graphics& g) override;
@@ -56,29 +43,15 @@ private:
     
     void timerCallback (int timerId) override;
     
-    void run() override;
-
-    void OpenSerialPort(void);
-    void CloseSerialPort(void);
     void UpdateFrequencyBandsGui(void);
 
     /////////////////////////////
-    String                               mCurrentSerialPortName;
-    ScopedPointer<SerialPort>            mSerialPort;
-    ScopedPointer<SerialPortInputStream> mSerialPortInput;
-	int			mParseState;
-
-    int			mNumberOfBands;
-	String		mRawSerialData;
-	int			mFrequencyBandData[MAX_BINS];
-    String      mFrequencyBandLabels[MAX_BINS];
-	MeterComp*  mFrequencyBandMeters[MAX_BINS];
-    TextButton* mQuitButton;
-    Label*      mComPortLabel;
-    SerialPortMenu* mComPortName;
-    
-    CriticalSection mFrequencyBandDataLock;
-    CriticalSection mFrequencyBandLabelLock;
+    FrequencyBandDevice           mFrequencyBandDevice;
+    OwnedArray<MeterComp>         mFrequencyBandMeters;
+    int                           mNumberOfBandsDisplayed;
+    ScopedPointer<TextButton>     mQuitButton;
+    ScopedPointer<Label>          mComPortLabel;
+    ScopedPointer<SerialPortMenu> mComPortName;
 
     bool mDoGuiResize;
 
