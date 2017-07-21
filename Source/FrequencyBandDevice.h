@@ -9,14 +9,14 @@ public:
     FrequencyBandDevice(void);
     ~FrequencyBandDevice();
 
-    void SetSerialPortName(String serialPortName);
+    void SetSerialPortName(String _serialPortName);
     String GetSerialPortName(void);
     void Open(void);
     void Close(void);
 
     uint16_t GetNumberOfBands(void);
-    int      GetBandData(uint16_t bandIndex);
-    String   GetBandLabel(uint16_t bandIndex);
+    int      GetBandData(uint16_t _bandIndex);
+    String   GetBandLabel(uint16_t _bandIndex);
 
 private:
     #define kBeginPacket '<'
@@ -40,21 +40,21 @@ private:
 
     void run() override;
 
-    void SetNumberOfBands(uint16_t numberOfBands);
+    void SetNumberOfBands(uint16_t _numberOfBands);
 
-    void OpenSerialPort(void);
+    bool OpenSerialPort(void);
     void CloseSerialPort(void);
 
     String                               mCurrentSerialPortName;
     ScopedPointer<SerialPort>            mSerialPort;
     ScopedPointer<SerialPortInputStream> mSerialPortInput;
-    int			  mParseState;
-    int			  mNumberOfBands;
+    
+    int			  mParseState{ eParseStateIdle };
+    int			  mNumberOfBands{ 0 };
     String		  mRawSerialData;
     Array<int>    mFrequencyBandData;
     Array<String> mFrequencyBandLabels;
-
-    uint16_t    mThreadTask;
+    uint16_t      mThreadTask{ eThreadTaskIdle };
 
     CriticalSection mFrequencyBandDataLock;
     CriticalSection mFrequencyBandLabelLock;

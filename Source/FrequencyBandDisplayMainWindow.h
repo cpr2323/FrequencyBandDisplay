@@ -30,25 +30,25 @@ private:
 
 
     /////////////////////////////
-    void paint (Graphics& g) override;
+    void paint (Graphics& _g) override;
     void resized() override;
-    void buttonClicked (Button* buttonThatWasClicked) override;
+    void buttonClicked (Button* _buttonThatWasClicked) override;
     
-    void timerCallback (int timerId) override;
+    void timerCallback (int _timerId) override;
     
     void UpdateFrequencyBandsGui(void);
 
     /////////////////////////////
     FrequencyBandDevice           mFrequencyBandDevice;
     OwnedArray<MeterComp>         mFrequencyBandMeters;
-    int                           mNumberOfBandsDisplayed;
+    int                           mNumberOfBandsDisplayed {0 };
     ScopedPointer<TextButton>     mQuitButton;
     ScopedPointer<Label>          mComPortLabel;
     ScopedPointer<SerialPortMenu> mComPortName;
 
-    bool mDoGuiResize;
+    bool mDoGuiResize { false };
 
-    ApplicationProperties* mApplicationProperties;
+    ApplicationProperties* mApplicationProperties{ nullptr };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FrequencyBandDisplayMainWindow)
 };

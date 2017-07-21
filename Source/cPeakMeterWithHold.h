@@ -4,18 +4,20 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "cSinglePoleFilter.h"
 
+static const auto kDefaultHoldTime = 1000;
+static const auto kDefaultFilterValue = 0.99f;
+
 ////////////////////////////////////////////////////
 // cPeakMeterWithHold
 ////////////////////////////////////////////////////
 class cPeakMeterWithHold
 {
 public:
-    cPeakMeterWithHold(int64 _holdTime = 1000)
-        : mPeakValue(0.0),
-        mHoldTime(_holdTime),
-        mHoldTimeStart(Time::currentTimeMillis() - mHoldTime)
+    cPeakMeterWithHold(int64 _holdTime = kDefaultHoldTime)
+        : mHoldTime(_holdTime),
+          mHoldTimeStart(Time::currentTimeMillis() - mHoldTime)
     {
-        mFilteredPeakValue.Config(0.99);
+        mFilteredPeakValue.Config(kDefaultFilterValue);
     }
 
     void SetValue(float _newValue)
@@ -56,10 +58,10 @@ public:
         return currentPeakHoldValue;
     }
 private:
-    float             mPeakValue;
+    float             mPeakValue{ 0.0f };
     cSinglePoleFilter mFilteredPeakValue;
-    int               mHoldTime;
-    int64             mHoldTimeStart;
+    int               mHoldTime{ 0 };
+    int64             mHoldTimeStart{ 0 };
 };
 
 #endif // __C_PEAK_METER_WITH_HOLD_H__

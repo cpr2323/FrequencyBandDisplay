@@ -17,13 +17,8 @@
 // FrequencyBandDevice
 ////////////////////////////////////////////////////
 FrequencyBandDevice::FrequencyBandDevice()
-    : Thread(String("FrequencyBandDevice")),
-    mNumberOfBands(0),
-    mThreadTask(eThreadTaskIdle)
+    : Thread(String("FrequencyBandDevice"))
 {
-    mParseState = eParseStateIdle;
-    mThreadTask = eThreadTaskIdle;
-
     // start the serial thread reading data
     startThread();
 }
@@ -39,9 +34,9 @@ uint16_t FrequencyBandDevice::GetNumberOfBands(void)
     return mNumberOfBands;
 }
 
-void FrequencyBandDevice::SetSerialPortName(String serialPortName)
+void FrequencyBandDevice::SetSerialPortName(String _serialPortName)
 {
-    mCurrentSerialPortName = serialPortName;
+    mCurrentSerialPortName = _serialPortName;
 }
 
 String FrequencyBandDevice::GetSerialPortName(void)
@@ -51,7 +46,8 @@ String FrequencyBandDevice::GetSerialPortName(void)
 
 void FrequencyBandDevice::Open(void)
 {
-    mThreadTask = eThreadTaskOpenSerialPort;
+    if (mCurrentSerialPortName.length() > 0)
+        mThreadTask = eThreadTaskOpenSerialPort;
 }
 
 void FrequencyBandDevice::Close(void)
@@ -59,7 +55,7 @@ void FrequencyBandDevice::Close(void)
     mThreadTask = eThreadTaskCloseSerialPort;
 }
 
-void FrequencyBandDevice::OpenSerialPort(void)
+bool FrequencyBandDevice::OpenSerialPort(void)
 {
     mSerialPort = new SerialPort();
     bool opened = mSerialPort->open(mCurrentSerialPortName);
@@ -81,6 +77,8 @@ void FrequencyBandDevice::OpenSerialPort(void)
         // report error
         Logger::outputDebugString(String("Unable to open serial port:") + mCurrentSerialPortName);
     }
+    
+    return opened;
 }
 
 void FrequencyBandDevice::CloseSerialPort(void)
@@ -94,29 +92,29 @@ void FrequencyBandDevice::CloseSerialPort(void)
     }
 }
 
-void FrequencyBandDevice::SetNumberOfBands(uint16_t numberOfBands)
+void FrequencyBandDevice::SetNumberOfBands(uint16_t _numberOfBands)
 {
-    Logger::outputDebugString(String(numberOfBands) + String(" ************band count changed************"));
+    Logger::outputDebugString(String(_numberOfBands) + String(" ************band count changed************"));
 
     const ScopedLock scopedLock_Data(mFrequencyBandDataLock);
     const ScopedLock scopedLock_Labels(mFrequencyBandLabelLock);
 
-    mNumberOfBands = numberOfBands;
+    mNumberOfBands = _numberOfBands;
 
     mFrequencyBandData.resize(mNumberOfBands);
     mFrequencyBandLabels.resize(mNumberOfBands);
 }
 
-int FrequencyBandDevice::GetBandData(uint16_t bandIndex)
+int FrequencyBandDevice::GetBandData(uint16_t _bandIndex)
 {
     const ScopedLock scopedLock(mFrequencyBandDataLock);
-    return mFrequencyBandData[bandIndex];
+    return mFrequencyBandData[_bandIndex];
 }
 
-String FrequencyBandDevice::GetBandLabel(uint16_t bandIndex)
+String FrequencyBandDevice::GetBandLabel(uint16_t _bandIndex)
 {
     const ScopedLock scopedLock(mFrequencyBandLabelLock);
-    return mFrequencyBandLabels[bandIndex];
+    return mFrequencyBandLabels[_bandIndex];
 }
 
 #define kSerialPortBufferLen 256
@@ -126,143 +124,143 @@ void FrequencyBandDevice::run()
     {
         switch (mThreadTask)
         {
-        case eThreadTaskOpenSerialPort:
-        {
-            OpenSerialPort();
-            mThreadTask = eThreadTaskReadSerialPort;
-        }
-        break;
-
-        case eThreadTaskCloseSerialPort:
-        {
-            CloseSerialPort();
-            mThreadTask = eThreadTaskIdle;
-        }
-        break;
-
-        case eThreadTaskReadSerialPort:
-        {
-            // handle reading from the serial port
-            if ((mSerialPortInput != nullptr) && (!mSerialPortInput->isExhausted()))
+            case eThreadTaskOpenSerialPort:
             {
-                int  bytesRead = 0;
-                int  curByteOffset = 0;
-                char incomingData[kSerialPortBufferLen] = "";
+                if (OpenSerialPort())
+                    mThreadTask = eThreadTaskReadSerialPort;
+            }
+            break;
 
-                bytesRead = mSerialPortInput->read(incomingData, kSerialPortBufferLen);
-                if (bytesRead < 1)
+            case eThreadTaskCloseSerialPort:
+            {
+                CloseSerialPort();
+                mThreadTask = eThreadTaskIdle;
+            }
+            break;
+
+            case eThreadTaskReadSerialPort:
+            {
+                // handle reading from the serial port
+                if ((mSerialPortInput != nullptr) && (!mSerialPortInput->isExhausted()))
                 {
-                    wait(1);
-                    continue;
-                }
-                else
-                {
-                    // parse incoming data
-                    while (curByteOffset < bytesRead)
+                    auto  bytesRead = 0;
+                    auto  curByteOffset = 0;
+                    char incomingData[kSerialPortBufferLen] = "";
+
+                    bytesRead = mSerialPortInput->read(incomingData, kSerialPortBufferLen);
+                    if (bytesRead < 1)
                     {
-                        switch (mParseState)
+                        wait(1);
+                        continue;
+                    }
+                    else
+                    {
+                        // parse incoming data
+                        while (curByteOffset < bytesRead)
                         {
-                        case eParseStateIdle:
-                        {
-                            if (incomingData[curByteOffset] == kBeginPacket)
+                            switch (mParseState)
                             {
-                                mRawSerialData = String::empty;
-                                mParseState = eParseStateReading;
+                            case eParseStateIdle:
+                            {
+                                if (incomingData[curByteOffset] == kBeginPacket)
+                                {
+                                    mRawSerialData = String::empty;
+                                    mParseState = eParseStateReading;
+                                }
                             }
-                        }
-                        break;
+                            break;
 
-                        case eParseStateReading:
-                        {
-                            if (incomingData[curByteOffset] == kEndPacket)
+                            case eParseStateReading:
                             {
-                                mParseState = eParseStateIdle;
-                                Logger::outputDebugString("pkt: " + mRawSerialData);
-                                int startOfByteCount = mRawSerialData.indexOf("|");
-                                if (startOfByteCount == -1)
-                                    break;
-                                int expectedByteCount = mRawSerialData.substring(startOfByteCount + 1).getIntValue();
-                                if (expectedByteCount != startOfByteCount + 1)
-                                    break;
+                                if (incomingData[curByteOffset] == kEndPacket)
+                                {
+                                    mParseState = eParseStateIdle;
+                                    Logger::outputDebugString("pkt: " + mRawSerialData);
+                                    auto startOfByteCount = mRawSerialData.indexOf("|");
+                                    if (startOfByteCount == -1)
+                                        break;
+                                    auto expectedByteCount = mRawSerialData.substring(startOfByteCount + 1).getIntValue();
+                                    if (expectedByteCount != startOfByteCount + 1)
+                                        break;
 
-                                char cmd = mRawSerialData[0];
-                                // skip over command byte
-                                mRawSerialData = mRawSerialData.substring(1);
-                                switch (cmd)
-                                {
-                                case kBandData:
-                                {
-                                    // count:<comma separated band data>
-                                    // D7:126,100,5,34,79,80,120
-                                    int bandCount = mRawSerialData.getIntValue();
-                                    if (bandCount > 0)
+                                    auto cmd = mRawSerialData[0];
+                                    // skip over command byte
+                                    mRawSerialData = mRawSerialData.substring(1);
+                                    switch (cmd)
                                     {
-                                        if (bandCount != mNumberOfBands)
-                                            SetNumberOfBands(bandCount);
-
-                                        // skip over band count and ':' separator
-                                        mRawSerialData = mRawSerialData.trimCharactersAtStart(String("0123456789"));
-                                        mRawSerialData = mRawSerialData.trimCharactersAtStart(String(":"));
-
-                                        // read in data for each band
+                                        case kBandData:
                                         {
-                                            const ScopedLock scopedLock(mFrequencyBandDataLock);
-                                            for (int curBandIndex = 0; curBandIndex < mNumberOfBands; ++curBandIndex)
+                                            // count:<comma separated band data>
+                                            // D7:126,100,5,34,79,80,120
+                                            auto bandCount = mRawSerialData.getIntValue();
+                                            if (bandCount > 0)
                                             {
-                                                // 126,100,5,etc
-                                                mFrequencyBandData.set(curBandIndex, mRawSerialData.getIntValue());
-                                                mRawSerialData = mRawSerialData.trimCharactersAtStart(String("0123456789."));
-                                                mRawSerialData = mRawSerialData.trimCharactersAtStart(String(","));
+                                                if (bandCount != mNumberOfBands)
+                                                    SetNumberOfBands(bandCount);
+
+                                                // skip over band count and ':' separator
+                                                mRawSerialData = mRawSerialData.trimCharactersAtStart(String("0123456789"));
+                                                mRawSerialData = mRawSerialData.trimCharactersAtStart(String(":"));
+
+                                                // read in data for each band
+                                                {
+                                                    const ScopedLock scopedLock(mFrequencyBandDataLock);
+                                                    for (auto curBandIndex = 0; curBandIndex < mNumberOfBands; ++curBandIndex)
+                                                    {
+                                                        // 126,100,5,etc
+                                                        mFrequencyBandData.set(curBandIndex, mRawSerialData.getIntValue());
+                                                        mRawSerialData = mRawSerialData.trimCharactersAtStart(String("0123456789."));
+                                                        mRawSerialData = mRawSerialData.trimCharactersAtStart(String(","));
+                                                    }
+                                                }
                                             }
                                         }
-                                    }
-                                }
-                                break;
+                                        break;
 
-                                case kBandLabels:
-                                {
-                                    // count:<comma separated quoted labels data>
-                                    // L7:"1Hz","5Hz","10Hz","20Hz","40Hz","80Hz","160Hz"
-                                    int bandCount = mRawSerialData.getIntValue();
-                                    if (bandCount > 0)
-                                    {
-                                        if (bandCount != mNumberOfBands)
-                                            SetNumberOfBands(bandCount);
-
-                                        // skip over band count and ':' separator
-                                        mRawSerialData = mRawSerialData.trimCharactersAtStart(String("0123456789"));
-                                        mRawSerialData = mRawSerialData.trimCharactersAtStart(String(":"));
-
-                                        // read in label for each band
+                                        case kBandLabels:
                                         {
-                                            const ScopedLock scopedLock(mFrequencyBandLabelLock);
-                                            for (int curBandIndex = 0; curBandIndex < mNumberOfBands; ++curBandIndex)
+                                            // count:<comma separated quoted labels data>
+                                            // L7:"1Hz","5Hz","10Hz","20Hz","40Hz","80Hz","160Hz"
+                                            auto bandCount = mRawSerialData.getIntValue();
+                                            if (bandCount > 0)
                                             {
-                                                // find and strip off first "
-                                                mRawSerialData = mRawSerialData.fromFirstOccurrenceOf(String("\""), false, false);
-                                                // "20Hz", "10Hz", etc
-                                                mFrequencyBandLabels[curBandIndex] = mRawSerialData.upToFirstOccurrenceOf(String("\""), false, false);
-                                                // skip ending '",'
-                                                mRawSerialData = mRawSerialData.fromFirstOccurrenceOf(String("\","), false, false);
+                                                if (bandCount != mNumberOfBands)
+                                                    SetNumberOfBands(bandCount);
+
+                                                // skip over band count and ':' separator
+                                                mRawSerialData = mRawSerialData.trimCharactersAtStart(String("0123456789"));
+                                                mRawSerialData = mRawSerialData.trimCharactersAtStart(String(":"));
+
+                                                // read in label for each band
+                                                {
+                                                    const ScopedLock scopedLock(mFrequencyBandLabelLock);
+                                                    for (auto curBandIndex = 0; curBandIndex < mNumberOfBands; ++curBandIndex)
+                                                    {
+                                                        // find and strip off first "
+                                                        mRawSerialData = mRawSerialData.fromFirstOccurrenceOf(String("\""), false, false);
+                                                        // "20Hz", "10Hz", etc
+                                                        mFrequencyBandLabels[curBandIndex] = mRawSerialData.upToFirstOccurrenceOf(String("\""), false, false);
+                                                        // skip ending '",'
+                                                        mRawSerialData = mRawSerialData.fromFirstOccurrenceOf(String("\","), false, false);
+                                                    }
+                                                }
                                             }
                                         }
+                                        break;
+
+                                        default:
+                                        {
+                                            // error - unknown cmd
+                                        }
+                                        break;
                                     }
                                 }
-                                break;
-
-                                default:
+                                else
                                 {
-                                    // error - unknown cmd
-                                }
-                                break;
+                                    mRawSerialData += String(String::charToString(incomingData[curByteOffset]));
                                 }
                             }
-                            else
-                            {
-                                mRawSerialData += String(String::charToString(incomingData[curByteOffset]));
-                            }
-                        }
-                        break;
+                            break;
                         }
 
                         ++curByteOffset;

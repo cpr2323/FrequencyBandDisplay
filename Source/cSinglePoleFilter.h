@@ -9,30 +9,25 @@
 class cSinglePoleFilter
 {
 public:
-    cSinglePoleFilter(void)
-        : mA(1.0),
-        mB(1.0f - mA),
-        mZ(0.0f)
-    {
-
-    }
-
     cSinglePoleFilter(float a)
-        : mA(a),
-        mB(1.0f - mA),
-        mZ(0.0f)
+    {
+        Config(a);
+    }
+    
+    cSinglePoleFilter(void)
+        : cSinglePoleFilter(1.0f)
     {
     }
 
-    float DoFilter(float data)
+    float DoFilter(float _data)
     {
-        mZ = (data * mB) + (mZ * mA);
+        mZ = (_data * mB) + (mZ * mA);
         return mZ;
     }
 
-    void Config(float a)
+    void Config(float _a)
     {
-        mA = a;
+        mA = _a;
         mB = 1.0f - mA;
         mZ = 0.0f;
     }
@@ -48,7 +43,9 @@ public:
     }
 
 private:
-    float mA, mB, mZ;
+    float mA{ 0.0f };
+    float mB{ 0.0f };
+    float mZ{ 0.0f };
 };
 
 #endif // __C_SINGLE_POLE_FILTER_H__

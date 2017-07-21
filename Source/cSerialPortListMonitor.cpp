@@ -1,9 +1,7 @@
 #include "cSerialPortListMonitor.h"
 
 cSerialPortListMonitor::cSerialPortListMonitor(void)
-    : Thread(String("Serial Port Monitor")),
-    mSleepTime(kSerialPortListMonitorSleepTime),
-    mListChanged(false)
+    : Thread(String("Serial Port Monitor"))
 {
     startThread();
 }
@@ -20,9 +18,9 @@ StringPairArray cSerialPortListMonitor::GetSerialPortList(void)
     return mSerialPortNames;
 }
 
-void cSerialPortListMonitor::SetSleepTime(int sleepTime)
+void cSerialPortListMonitor::SetSleepTime(int _sleepTime)
 {
-    mSleepTime = sleepTime;
+    mSleepTime = _sleepTime;
 }
 
 bool cSerialPortListMonitor::HasListChanged(void)

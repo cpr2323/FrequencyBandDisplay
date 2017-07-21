@@ -11,11 +11,11 @@ class FrequencyDisplayWindow  : public DocumentWindow
 {
 public:
     //==============================================================================
-    FrequencyDisplayWindow(String name, ApplicationProperties* applicationProperties)
+    FrequencyDisplayWindow(String name, ApplicationProperties* _applicationProperties)
         : DocumentWindow (name, Colours::lightgrey, DocumentWindow::allButtons, true)
     {
         // Create an instance of our main content component, and add it to our window..
-        setContentOwned (new FrequencyBandDisplayMainWindow(applicationProperties), true);
+        setContentOwned (new FrequencyBandDisplayMainWindow(_applicationProperties), true);
 
         // Centre the window on the screen
         centreWithSize (getWidth(), getHeight());
@@ -57,7 +57,7 @@ public:
     }
 
     //==============================================================================
-    void initialise (const String& commandLine)
+    void initialise (const String& _commandLine)
     {
         mApplicationProperties = new ApplicationProperties();
 
@@ -73,9 +73,9 @@ public:
 
         mApplicationProperties->setStorageParameters(configuratorPropertiesOptions);
 
-        if (commandLine.isNotEmpty())
+        if (_commandLine.isNotEmpty())
         {
-            processCommandLine(commandLine);
+            processCommandLine(_commandLine);
         }
 
         mFrequencyDisplayWindow = new FrequencyDisplayWindow(getApplicationName(), mApplicationProperties);
@@ -108,15 +108,15 @@ public:
         return true;
     }
 
-    void anotherInstanceStarted (const String& commandLine)
+    void anotherInstanceStarted (const String& _commandLine)
     {
     }
 
 private:
-    void processCommandLine(const String& commandLine)
+    void processCommandLine(const String& _commandLine)
     {
         StringArray args;
-        args.addTokens(commandLine, true);
+        args.addTokens(_commandLine, true);
         args.trim();
 
         //if (matchArgument(args[0], "help")) showHelp();

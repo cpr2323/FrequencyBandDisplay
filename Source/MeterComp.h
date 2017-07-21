@@ -11,31 +11,28 @@ class MeterComp : public Component
 {
 public:
     MeterComp(void)
-        : mMeterValue(0.0),
-        mShowPeak(true),
-        mShowFilteredMeterValue(true)
     {
         addAndMakeVisible(mMeterLabel);
         mMeterLabel.setJustificationType(Justification::centredTop);
-        mFilteredMeterValue.Config(0.9);
+        mFilteredMeterValue.Config(0.9f);
         setOpaque(true);
     }
 
-    void paint(Graphics& g) override
+    void paint(Graphics& _g) override
     {
         // drae background
-        g.fillAll(Colours::grey);
+        _g.fillAll(Colours::grey);
 
         // drae main mater
-        g.setColour(Colours::green);
+        _g.setColour(Colours::green);
         float meterValue = mShowFilteredMeterValue ? mFilteredMeterValue.GetFilteredValue() : mMeterValue;
         int meterHeight = (int)(getHeight() * meterValue);
-        g.fillRect(0, getHeight() - meterHeight, getWidth(), meterHeight);
+        _g.fillRect(0, getHeight() - meterHeight, getWidth(), meterHeight);
         if (mShowPeak && mPeakValue.GetValue() > 0.0)
         {
-            g.setColour(Colours::gold);
+            _g.setColour(Colours::gold);
             int peakHeight = (int)(getHeight() * mPeakValue.GetValue());
-            g.fillRect(0, (getHeight() - peakHeight) - 2, getWidth(), 5);
+            _g.fillRect(0, (getHeight() - peakHeight) - 2, getWidth(), 5);
         }
     }
 
@@ -44,28 +41,24 @@ public:
         mMeterLabel.setBounds(1, 1, getWidth() - 2, 20);
     }
 
-    ~MeterComp()
+    void SetMeterValue(float _meterValue)
     {
-    }
+        mMeterValue = _meterValue;
 
-    void SetMeterValue(float meterValue)
-    {
-        mMeterValue = meterValue;
-
-        if (meterValue > mFilteredMeterValue.GetFilteredValue())
-            mFilteredMeterValue.SetCurValue(meterValue);
+        if (_meterValue > mFilteredMeterValue.GetFilteredValue())
+            mFilteredMeterValue.SetCurValue(_meterValue);
         else
-            mFilteredMeterValue.DoFilter(meterValue);
+            mFilteredMeterValue.DoFilter(_meterValue);
 
         //mPeakValue.SetValue(mFilteredMeterValue.GetFilteredValue());
-        mPeakValue.SetValue(meterValue);
+        mPeakValue.SetValue(_meterValue);
 
         repaint();
     }
 
-    void SetMeterLabel(String meterLabel)
+    void SetMeterLabel(String _meterLabel)
     {
-        mMeterLabel.setText(meterLabel, NotificationType::sendNotification);
+        mMeterLabel.setText(_meterLabel, NotificationType::sendNotification);
         repaint();
     }
 
@@ -75,13 +68,13 @@ public:
     }
 
 private:
-    float             mMeterValue;
+    float             mMeterValue{ 0.0f };
     cSinglePoleFilter mFilteredMeterValue;
     Label             mMeterLabel;
 
     cPeakMeterWithHold mPeakValue;
-    bool               mShowPeak;
-    bool               mShowFilteredMeterValue;
+    bool               mShowPeak{ true };
+    bool               mShowFilteredMeterValue{ true };
 };
 
 #endif // __METER_COMP_H__

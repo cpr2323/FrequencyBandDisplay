@@ -14,14 +14,14 @@ public:
     ~cSerialPortListMonitor(void);
     bool HasListChanged(void);
     StringPairArray GetSerialPortList(void);
-    void SetSleepTime(int sleepTime);
+    void SetSleepTime(int _sleepTime);
     void run() override;
 
 private:
     CriticalSection mDataLock;
     StringPairArray mSerialPortNames;
-    int             mSleepTime;
-    bool            mListChanged;
+    int             mSleepTime{ kSerialPortListMonitorSleepTime };
+    bool            mListChanged{ false };
 };
 
 #endif // __C_SERIAL_PORT_LIST_MONITOR_H__

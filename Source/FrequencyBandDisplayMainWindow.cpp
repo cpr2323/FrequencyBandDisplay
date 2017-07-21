@@ -13,13 +13,11 @@ using namespace std;
 // FrequencyBandDisplayMainWindow
 ////////////////////////////////////////////////////
 FrequencyBandDisplayMainWindow::FrequencyBandDisplayMainWindow (ApplicationProperties* applicationProperties)
-    : mNumberOfBandsDisplayed(0),
-      mDoGuiResize(false),
-      mApplicationProperties(applicationProperties)
+    : mApplicationProperties(applicationProperties)
 {
     addAndMakeVisible(mComPortLabel = new Label("ComPortLabel", "COM Port:"));
     addAndMakeVisible(mComPortName = new SerialPortMenu("ComPortName", "", mApplicationProperties));
-    addAndMakeVisible (mQuitButton = new TextButton (String::empty));
+    addAndMakeVisible(mQuitButton = new TextButton(String::empty));
     mQuitButton->setButtonText ("Quit");
     mQuitButton->addListener (this);
 
@@ -40,9 +38,9 @@ FrequencyBandDisplayMainWindow::~FrequencyBandDisplayMainWindow()
 	stopTimer(eTimerIdResizeThrottleTimer);
 }
 
-void FrequencyBandDisplayMainWindow::paint (Graphics& g)
+void FrequencyBandDisplayMainWindow::paint (Graphics& _g)
 {
-    g.fillAll (Colour (0xffc1d0ff));
+    _g.fillAll (Colour (0xffc1d0ff));
 }
 
 void FrequencyBandDisplayMainWindow::resized()
@@ -56,10 +54,10 @@ void FrequencyBandDisplayMainWindow::UpdateFrequencyBandsGui(void)
 {
     if (mNumberOfBandsDisplayed > 0)
     {
-        int bandWidth = getWidth() / (mNumberOfBandsDisplayed + 1);
+        auto bandWidth = getWidth() / (mNumberOfBandsDisplayed + 1);
 
         // resize and make visible
-        for (int curBandIndex = 0; curBandIndex < mNumberOfBandsDisplayed + 1; ++curBandIndex)
+        for (auto curBandIndex = 0; curBandIndex < mNumberOfBandsDisplayed + 1; ++curBandIndex)
         {
             mFrequencyBandMeters[curBandIndex]->setVisible(true);
             mFrequencyBandMeters[curBandIndex]->setBounds(curBandIndex * bandWidth + 2, 2, bandWidth - 2, mQuitButton->getY() - 4);
@@ -81,8 +79,8 @@ void FrequencyBandDisplayMainWindow::timerCallback(int timerId)
         {
             if (mDoGuiResize)
             {
-                const int kComPortLabelWidth = 55;
-                const int kComPostTextSpacing = 2;
+                const auto kComPortLabelWidth = 55;
+                const auto kComPostTextSpacing = 2;
                 mComPortLabel->setBounds(kComPostTextSpacing, getHeight() - 20 - kComPostTextSpacing, kComPortLabelWidth, 20);
                 mComPortName->setBounds(kComPortLabelWidth, getHeight() - 20 - kComPostTextSpacing, 100, 20);
                 mQuitButton->setBounds(getWidth() - kQuitButtonWidth - 2, getHeight() - kQuitButtonHeight - 2, kQuitButtonWidth, kQuitButtonHeight);
@@ -95,17 +93,17 @@ void FrequencyBandDisplayMainWindow::timerCallback(int timerId)
 		case eTimerIdGuiUpdateTimer:
 		{
             // check if number of bands has changed
-            int numberOfBands = mFrequencyBandDevice.GetNumberOfBands();
+            auto numberOfBands = mFrequencyBandDevice.GetNumberOfBands();
             if (numberOfBands != mNumberOfBandsDisplayed)
             {
                 // clean up old band objects
-                for (int curBandIndex = 0; curBandIndex < mNumberOfBandsDisplayed; ++curBandIndex)
+                for (auto curBandIndex = 0; curBandIndex < mNumberOfBandsDisplayed; ++curBandIndex)
                     removeChildComponent(mFrequencyBandMeters[curBandIndex]);
                 mFrequencyBandMeters.clear();
 
                 // set pup new band objects
                 mNumberOfBandsDisplayed = numberOfBands;
-                for (int curBinIndex = 0; curBinIndex < mNumberOfBandsDisplayed + 1; ++curBinIndex)
+                for (auto curBinIndex = 0; curBinIndex < mNumberOfBandsDisplayed + 1; ++curBinIndex)
                 {
                     mFrequencyBandMeters.add(new MeterComp());
                     addAndMakeVisible(mFrequencyBandMeters[curBinIndex]);
@@ -116,10 +114,10 @@ void FrequencyBandDisplayMainWindow::timerCallback(int timerId)
             if (mNumberOfBandsDisplayed != 0)
             {
                 // display the current data and labels
-                int total = 0;
-                for (int curBandIndex = 0; curBandIndex < mNumberOfBandsDisplayed; ++curBandIndex)
+                auto total = 0;
+                for (auto curBandIndex = 0; curBandIndex < mNumberOfBandsDisplayed; ++curBandIndex)
                 {
-                    int frequencyBandValue = mFrequencyBandDevice.GetBandData(curBandIndex);
+                    auto frequencyBandValue = mFrequencyBandDevice.GetBandData(curBandIndex);
                     mFrequencyBandMeters[curBandIndex]->SetMeterValue((float)frequencyBandValue / (float)kInputMax);
                     total += frequencyBandValue;
                     //total += (frequencyBandValue / (mNumberOfBands / 2));
