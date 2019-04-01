@@ -18,9 +18,9 @@ StringPairArray cSerialPortListMonitor::GetSerialPortList(void)
     return mSerialPortNames;
 }
 
-void cSerialPortListMonitor::SetSleepTime(int _sleepTime)
+void cSerialPortListMonitor::SetSleepTime(int sleepTime)
 {
-    mSleepTime = _sleepTime;
+    mSleepTime = sleepTime;
 }
 
 bool cSerialPortListMonitor::HasListChanged(void)
@@ -36,7 +36,7 @@ void cSerialPortListMonitor::run()
         // wake up every mSleepTime to check the serial port list
         sleep(mSleepTime);
 
-        StringPairArray serialPortList(SerialPort::getSerialPortPaths());
+        const auto serialPortList(SerialPort::getSerialPortPaths());
         ScopedLock dataLock(mDataLock);
         if ((serialPortList.size() != mSerialPortNames.size()) || serialPortList != mSerialPortNames)
         {

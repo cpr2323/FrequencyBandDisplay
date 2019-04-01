@@ -11,11 +11,11 @@ class FrequencyDisplayWindow  : public DocumentWindow
 {
 public:
     //==============================================================================
-    FrequencyDisplayWindow(String name, ApplicationProperties* _applicationProperties)
+    FrequencyDisplayWindow(String name, ApplicationProperties* applicationProperties)
         : DocumentWindow (name, Colours::lightgrey, DocumentWindow::allButtons, true)
     {
         // Create an instance of our main content component, and add it to our window..
-        setContentOwned (new FrequencyBandDisplayMainWindow(_applicationProperties), true);
+        setContentOwned (new FrequencyBandDisplayMainWindow(applicationProperties), true);
 
         // Centre the window on the screen
         centreWithSize (getWidth(), getHeight());
@@ -32,7 +32,7 @@ public:
     }
 
     //==============================================================================
-    void closeButtonPressed()
+    void closeButtonPressed() override
     {
         // When the user presses the close button, we'll tell the app to quit. This
         // ArduinoFHTWindow object will be deleted by the JUCEArduinoFHTApplication class.
@@ -57,7 +57,7 @@ public:
     }
 
     //==============================================================================
-    void initialise (const String& _commandLine)
+    void initialise (const String& commandLine) override
     {
         mApplicationProperties = new ApplicationProperties();
 
@@ -73,15 +73,15 @@ public:
 
         mApplicationProperties->setStorageParameters(configuratorPropertiesOptions);
 
-        if (_commandLine.isNotEmpty())
+        if (commandLine.isNotEmpty())
         {
-            processCommandLine(_commandLine);
+            processCommandLine(commandLine);
         }
 
         mFrequencyDisplayWindow = new FrequencyDisplayWindow(getApplicationName(), mApplicationProperties);
     }
 
-    void shutdown()
+    void shutdown() override
     {
         // This method is where you should clear-up your app's resources..
 
@@ -91,32 +91,32 @@ public:
     }
 
     //==============================================================================
-    const String getApplicationName()
+    const String getApplicationName() override
     {
         return "Frequency Display";
     }
 
-    const String getApplicationVersion()
+    const String getApplicationVersion() override
     {
         // The ProjectInfo::versionString value is automatically updated by the Jucer, and
         // can be found in the JuceHeader.h file that it generates for our project.
         return ProjectInfo::versionString;
     }
 
-    bool moreThanOneInstanceAllowed()
+    bool moreThanOneInstanceAllowed() override
     {
         return true;
     }
 
-    void anotherInstanceStarted (const String& _commandLine)
+    void anotherInstanceStarted (const String&) override
     {
     }
 
 private:
-    void processCommandLine(const String& _commandLine)
+    void processCommandLine(const String& commandLine)
     {
         StringArray args;
-        args.addTokens(_commandLine, true);
+        args.addTokens(commandLine, true);
         args.trim();
 
         //if (matchArgument(args[0], "help")) showHelp();

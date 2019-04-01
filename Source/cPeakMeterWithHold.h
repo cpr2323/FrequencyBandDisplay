@@ -13,21 +13,21 @@ static const auto kDefaultFilterValue = 0.99f;
 class cPeakMeterWithHold
 {
 public:
-    cPeakMeterWithHold(int64 _holdTime = kDefaultHoldTime)
-        : mHoldTime(_holdTime),
+    cPeakMeterWithHold(int64 holdTime = kDefaultHoldTime)
+        : mHoldTime((int)holdTime),
           mHoldTimeStart(Time::currentTimeMillis() - mHoldTime)
     {
         mFilteredPeakValue.Config(kDefaultFilterValue);
     }
 
-    void SetValue(float _newValue)
+    void SetValue(float newValue)
     {
 
-        if (_newValue > mPeakValue)
+        if (newValue > mPeakValue)
         {
             // store the new peak value
-            mPeakValue = _newValue;
-            mFilteredPeakValue.SetCurValue(_newValue);
+            mPeakValue = newValue;
+            mFilteredPeakValue.SetCurValue(newValue);
 
             // reset the timer
             mHoldTimeStart = Time::currentTimeMillis();
@@ -37,8 +37,8 @@ public:
             // run the current value through the filtered value
             if ((Time::currentTimeMillis() - mHoldTimeStart) >= mHoldTime)
             {
-                mPeakValue = _newValue;
-                mFilteredPeakValue.DoFilter(_newValue);
+                mPeakValue = newValue;
+                mFilteredPeakValue.DoFilter(newValue);
             }
         }
     }

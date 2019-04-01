@@ -19,22 +19,22 @@ public:
     {
     }
 
-    float DoFilter(float _data)
+    float DoFilter(float data)
     {
-        mZ = (_data * mB) + (mZ * mA);
+        mZ = (data * mB) + (mZ * mA);
         return mZ;
     }
 
-    void Config(float _a)
+    void Config(float a)
     {
-        mA = _a;
+        mA = a;
         mB = 1.0f - mA;
         mZ = 0.0f;
     }
 
-    void SetCurValue(float _z)
+    void SetCurValue(float z)
     {
-        mZ = _z;
+        mZ = z;
     }
 
     float GetFilteredValue(void)

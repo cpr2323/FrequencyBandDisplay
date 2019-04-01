@@ -14,7 +14,7 @@ public:
     ~cSerialPortListMonitor(void);
     bool HasListChanged(void);
     StringPairArray GetSerialPortList(void);
-    void SetSleepTime(int _sleepTime);
+    void SetSleepTime(int sleepTime);
     void run() override;
 
 private:

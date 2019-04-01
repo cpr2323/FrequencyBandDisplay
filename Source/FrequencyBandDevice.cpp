@@ -31,12 +31,12 @@ FrequencyBandDevice::~FrequencyBandDevice()
 
 uint16_t FrequencyBandDevice::GetNumberOfBands(void)
 {
-    return mNumberOfBands;
+    return (uint16_t)mNumberOfBands;
 }
 
-void FrequencyBandDevice::SetSerialPortName(String _serialPortName)
+void FrequencyBandDevice::SetSerialPortName(String serialPortName)
 {
-    mCurrentSerialPortName = _serialPortName;
+    mCurrentSerialPortName = serialPortName;
 }
 
 String FrequencyBandDevice::GetSerialPortName(void)
@@ -92,29 +92,29 @@ void FrequencyBandDevice::CloseSerialPort(void)
     }
 }
 
-void FrequencyBandDevice::SetNumberOfBands(uint16_t _numberOfBands)
+void FrequencyBandDevice::SetNumberOfBands(uint16_t numberOfBands)
 {
-    Logger::outputDebugString(String(_numberOfBands) + String(" ************band count changed************"));
+    Logger::outputDebugString(String(numberOfBands) + String(" ************band count changed************"));
 
     const ScopedLock scopedLock_Data(mFrequencyBandDataLock);
     const ScopedLock scopedLock_Labels(mFrequencyBandLabelLock);
 
-    mNumberOfBands = _numberOfBands;
+    mNumberOfBands = numberOfBands;
 
     mFrequencyBandData.resize(mNumberOfBands);
     mFrequencyBandLabels.resize(mNumberOfBands);
 }
 
-int FrequencyBandDevice::GetBandData(uint16_t _bandIndex)
+int FrequencyBandDevice::GetBandData(uint16_t bandIndex)
 {
     const ScopedLock scopedLock(mFrequencyBandDataLock);
-    return mFrequencyBandData[_bandIndex];
+    return mFrequencyBandData[bandIndex];
 }
 
-String FrequencyBandDevice::GetBandLabel(uint16_t _bandIndex)
+String FrequencyBandDevice::GetBandLabel(uint16_t bandIndex)
 {
     const ScopedLock scopedLock(mFrequencyBandLabelLock);
-    return mFrequencyBandLabels[_bandIndex];
+    return mFrequencyBandLabels[bandIndex];
 }
 
 #define kSerialPortBufferLen 256
@@ -164,7 +164,7 @@ void FrequencyBandDevice::run()
                             {
                                 if (incomingData[curByteOffset] == kBeginPacket)
                                 {
-                                    mRawSerialData = String::empty;
+                                    mRawSerialData = {};
                                     mParseState = eParseStateReading;
                                 }
                             }
@@ -176,7 +176,7 @@ void FrequencyBandDevice::run()
                                 {
                                     mParseState = eParseStateIdle;
                                     Logger::outputDebugString("pkt: " + mRawSerialData);
-                                    auto startOfByteCount = mRawSerialData.indexOf("|");
+                                    const auto startOfByteCount = mRawSerialData.indexOf("|");
                                     if (startOfByteCount == -1)
                                         break;
                                     auto expectedByteCount = mRawSerialData.substring(startOfByteCount + 1).getIntValue();
@@ -196,7 +196,7 @@ void FrequencyBandDevice::run()
                                             if (bandCount > 0)
                                             {
                                                 if (bandCount != mNumberOfBands)
-                                                    SetNumberOfBands(bandCount);
+                                                    SetNumberOfBands((uint16_t)bandCount);
 
                                                 // skip over band count and ':' separator
                                                 mRawSerialData = mRawSerialData.trimCharactersAtStart(String("0123456789"));
@@ -221,11 +221,11 @@ void FrequencyBandDevice::run()
                                         {
                                             // count:<comma separated quoted labels data>
                                             // L7:"1Hz","5Hz","10Hz","20Hz","40Hz","80Hz","160Hz"
-                                            auto bandCount = mRawSerialData.getIntValue();
+                                            const auto bandCount = mRawSerialData.getIntValue();
                                             if (bandCount > 0)
                                             {
                                                 if (bandCount != mNumberOfBands)
-                                                    SetNumberOfBands(bandCount);
+                                                    SetNumberOfBands((uint16_t)bandCount);
 
                                                 // skip over band count and ':' separator
                                                 mRawSerialData = mRawSerialData.trimCharactersAtStart(String("0123456789"));

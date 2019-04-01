@@ -6,6 +6,7 @@ using namespace std;
 #include "cSerialPortListMonitor.h"
 #include "MeterComp.h"
 #include "SerialPortMenu.h"
+#include <memory>
 
 #define kInputMax 1023
 
@@ -15,18 +16,22 @@ using namespace std;
 FrequencyBandDisplayMainWindow::FrequencyBandDisplayMainWindow (ApplicationProperties* applicationProperties)
     : mApplicationProperties(applicationProperties)
 {
-    addAndMakeVisible(mComPortLabel = new Label("ComPortLabel", "COM Port:"));
-    addAndMakeVisible(mComPortName = new SerialPortMenu("ComPortName", "", mApplicationProperties));
-    addAndMakeVisible(mQuitButton = new TextButton(String::empty));
-    mQuitButton->setButtonText ("Quit");
-    mQuitButton->addListener (this);
+    comPortLabel.setText ("COM Port:", NotificationType::dontSendNotification);
+    addAndMakeVisible(comPortLabel);
+
+    comPortName = std::make_unique<SerialPortMenu> ("ComPortName", "", mApplicationProperties);
+    addAndMakeVisible(comPortName.get());
+
+    quitButton.setButtonText ("Quit");
+    quitButton.onClick = [this]() { JUCEApplication::quit (); };
+    addAndMakeVisible(quitButton);
 
     startTimer(eTimerIdResizeThrottleTimer, 1);
     startTimer(eTimerIdGuiUpdateTimer, 33);
     startTimer(eTimerCheckSerialPortChange, 1000);
 
-    mFrequencyBandDevice.SetSerialPortName(mComPortName->GetSelectedPort());
-    mFrequencyBandDevice.Open();
+    frequencyBandDevice.SetSerialPortName(comPortName->GetSelectedPort());
+    frequencyBandDevice.Open();
 
     setSize (900, 300);
 }
@@ -38,9 +43,9 @@ FrequencyBandDisplayMainWindow::~FrequencyBandDisplayMainWindow()
 	stopTimer(eTimerIdResizeThrottleTimer);
 }
 
-void FrequencyBandDisplayMainWindow::paint (Graphics& _g)
+void FrequencyBandDisplayMainWindow::paint (Graphics& g)
 {
-    _g.fillAll (Colour (0xffc1d0ff));
+    g.fillAll (Colour (0xffc1d0ff));
 }
 
 void FrequencyBandDisplayMainWindow::resized()
@@ -52,23 +57,17 @@ const int kQuitButtonWidth = 60;
 const int kQuitButtonHeight = 20;
 void FrequencyBandDisplayMainWindow::UpdateFrequencyBandsGui(void)
 {
-    if (mNumberOfBandsDisplayed > 0)
+    if (numberOfBandsDisplayed > 0)
     {
-        auto bandWidth = getWidth() / (mNumberOfBandsDisplayed + 1);
+        auto bandWidth = getWidth() / (numberOfBandsDisplayed + 1);
 
         // resize and make visible
-        for (auto curBandIndex = 0; curBandIndex < mNumberOfBandsDisplayed + 1; ++curBandIndex)
+        for (auto curBandIndex = 0; curBandIndex < numberOfBandsDisplayed + 1; ++curBandIndex)
         {
-            mFrequencyBandMeters[curBandIndex]->setVisible(true);
-            mFrequencyBandMeters[curBandIndex]->setBounds(curBandIndex * bandWidth + 2, 2, bandWidth - 2, mQuitButton->getY() - 4);
+            frequencyBandMeters[curBandIndex]->setVisible(true);
+            frequencyBandMeters[curBandIndex]->setBounds(curBandIndex * bandWidth + 2, 2, bandWidth - 2, quitButton.getY() - 4);
         }
     }
-}
-
-void FrequencyBandDisplayMainWindow::buttonClicked (Button* buttonThatWasClicked)
-{
-    if (buttonThatWasClicked == mQuitButton)
-        JUCEApplication::quit();
 }
 
 void FrequencyBandDisplayMainWindow::timerCallback(int timerId)
@@ -81,9 +80,9 @@ void FrequencyBandDisplayMainWindow::timerCallback(int timerId)
             {
                 const auto kComPortLabelWidth = 55;
                 const auto kComPostTextSpacing = 2;
-                mComPortLabel->setBounds(kComPostTextSpacing, getHeight() - 20 - kComPostTextSpacing, kComPortLabelWidth, 20);
-                mComPortName->setBounds(kComPortLabelWidth, getHeight() - 20 - kComPostTextSpacing, 100, 20);
-                mQuitButton->setBounds(getWidth() - kQuitButtonWidth - 2, getHeight() - kQuitButtonHeight - 2, kQuitButtonWidth, kQuitButtonHeight);
+                comPortLabel.setBounds(kComPostTextSpacing, getHeight() - 20 - kComPostTextSpacing, kComPortLabelWidth, 20);
+                comPortName->setBounds(kComPortLabelWidth, getHeight() - 20 - kComPostTextSpacing, 100, 20);
+                quitButton.setBounds(getWidth() - kQuitButtonWidth - 2, getHeight() - kQuitButtonHeight - 2, kQuitButtonWidth, kQuitButtonHeight);
                 UpdateFrequencyBandsGui();
                 mDoGuiResize = false;
             }
@@ -93,58 +92,58 @@ void FrequencyBandDisplayMainWindow::timerCallback(int timerId)
 		case eTimerIdGuiUpdateTimer:
 		{
             // check if number of bands has changed
-            auto numberOfBands = mFrequencyBandDevice.GetNumberOfBands();
-            if (numberOfBands != mNumberOfBandsDisplayed)
+            const auto numberOfBands = frequencyBandDevice.GetNumberOfBands();
+            if (numberOfBands != numberOfBandsDisplayed)
             {
                 // clean up old band objects
-                for (auto curBandIndex = 0; curBandIndex < mNumberOfBandsDisplayed; ++curBandIndex)
-                    removeChildComponent(mFrequencyBandMeters[curBandIndex]);
-                mFrequencyBandMeters.clear();
+                for (auto curBandIndex = 0; curBandIndex < numberOfBandsDisplayed; ++curBandIndex)
+                    removeChildComponent(frequencyBandMeters[curBandIndex]);
+                frequencyBandMeters.clear();
 
                 // set pup new band objects
-                mNumberOfBandsDisplayed = numberOfBands;
-                for (auto curBinIndex = 0; curBinIndex < mNumberOfBandsDisplayed + 1; ++curBinIndex)
+                numberOfBandsDisplayed = numberOfBands;
+                for (auto curBinIndex = 0; curBinIndex < numberOfBandsDisplayed + 1; ++curBinIndex)
                 {
-                    mFrequencyBandMeters.add(new MeterComp());
-                    addAndMakeVisible(mFrequencyBandMeters[curBinIndex]);
+                    frequencyBandMeters.add(new MeterComp());
+                    addAndMakeVisible(frequencyBandMeters[curBinIndex]);
                 }
                 mDoGuiResize = true;
             }
 
-            if (mNumberOfBandsDisplayed != 0)
+            if (numberOfBandsDisplayed != 0)
             {
                 // display the current data and labels
                 auto total = 0;
-                for (auto curBandIndex = 0; curBandIndex < mNumberOfBandsDisplayed; ++curBandIndex)
+                for (auto curBandIndex = 0; curBandIndex < numberOfBandsDisplayed; ++curBandIndex)
                 {
-                    auto frequencyBandValue = mFrequencyBandDevice.GetBandData(curBandIndex);
-                    mFrequencyBandMeters[curBandIndex]->SetMeterValue((float)frequencyBandValue / (float)kInputMax);
+                    auto frequencyBandValue = frequencyBandDevice.GetBandData((uint16_t)curBandIndex);
+                    frequencyBandMeters[curBandIndex]->SetMeterValue((float)frequencyBandValue / (float)kInputMax);
                     total += frequencyBandValue;
                     //total += (frequencyBandValue / (mNumberOfBands / 2));
 
-                    mFrequencyBandMeters[curBandIndex]->SetMeterLabel(mFrequencyBandDevice.GetBandLabel(curBandIndex));
+                    frequencyBandMeters[curBandIndex]->SetMeterLabel(frequencyBandDevice.GetBandLabel((uint16_t)curBandIndex));
                 }
 
-                if (mNumberOfBandsDisplayed > 0)
-                    total /= mNumberOfBandsDisplayed;
+                if (numberOfBandsDisplayed > 0)
+                    total /= numberOfBandsDisplayed;
 
-                mFrequencyBandMeters[mNumberOfBandsDisplayed]->SetMeterValue((float)total / (float)kInputMax);
-                mFrequencyBandMeters[mNumberOfBandsDisplayed]->SetMeterLabel("Total");
+                frequencyBandMeters[numberOfBandsDisplayed]->SetMeterValue((float)total / (float)kInputMax);
+                frequencyBandMeters[numberOfBandsDisplayed]->SetMeterLabel("Total");
             }
 		}
 		break;
 
         case eTimerCheckSerialPortChange:
         {
-            String selectedSerialPortName = mComPortName->GetSelectedPort();
-            if (selectedSerialPortName != mFrequencyBandDevice.GetSerialPortName())
+            String selectedSerialPortName = comPortName->GetSelectedPort();
+            if (selectedSerialPortName != frequencyBandDevice.GetSerialPortName())
             {
-                mFrequencyBandDevice.SetSerialPortName(selectedSerialPortName);
+                frequencyBandDevice.SetSerialPortName(selectedSerialPortName);
 
                 if (selectedSerialPortName.length() == 0)
-                    mFrequencyBandDevice.Close();
+                    frequencyBandDevice.Close();
                 else
-                    mFrequencyBandDevice.Open();
+                    frequencyBandDevice.Open();
             }
         }
         break;

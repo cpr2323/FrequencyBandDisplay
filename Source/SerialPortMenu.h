@@ -18,9 +18,9 @@ enum MenuIDs
 class SerialPortMenu : public Label
 {
 public:
-    SerialPortMenu(String _componentName, String _label, ApplicationProperties* _applicationProperties);
+    SerialPortMenu(String componentName, String label, ApplicationProperties* applicationProperties);
 
-    void   SetSelectedPort(String _deviceName);
+    void   SetSelectedPort(String deviceName);
     String GetSelectedPort(void);
 
     void mouseEnter(const MouseEvent &event) override;

@@ -9,7 +9,6 @@ class cSerialPortListMonitor;
 class SerialPortMenu;
 
 class FrequencyBandDisplayMainWindow  : public Component,
-                                        public ButtonListener,
                                         public MultiTimer
 {
 public:
@@ -30,21 +29,21 @@ private:
 
 
     /////////////////////////////
-    void paint (Graphics& _g) override;
+    void paint (Graphics& g) override;
     void resized() override;
-    void buttonClicked (Button* _buttonThatWasClicked) override;
     
-    void timerCallback (int _timerId) override;
+    void timerCallback (int timerId) override;
     
     void UpdateFrequencyBandsGui(void);
 
     /////////////////////////////
-    FrequencyBandDevice           mFrequencyBandDevice;
-    OwnedArray<MeterComp>         mFrequencyBandMeters;
-    int                           mNumberOfBandsDisplayed {0 };
-    ScopedPointer<TextButton>     mQuitButton;
-    ScopedPointer<Label>          mComPortLabel;
-    ScopedPointer<SerialPortMenu> mComPortName;
+    FrequencyBandDevice   frequencyBandDevice;
+    OwnedArray<MeterComp> frequencyBandMeters;
+    int                   numberOfBandsDisplayed { 0 };
+
+    TextButton quitButton;
+    Label comPortLabel;
+    std::unique_ptr<SerialPortMenu> comPortName;
 
     bool mDoGuiResize { false };
 

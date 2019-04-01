@@ -18,21 +18,21 @@ public:
         setOpaque(true);
     }
 
-    void paint(Graphics& _g) override
+    void paint(Graphics& g) override
     {
         // drae background
-        _g.fillAll(Colours::grey);
+        g.fillAll(Colours::grey);
 
         // drae main mater
-        _g.setColour(Colours::green);
-        float meterValue = mShowFilteredMeterValue ? mFilteredMeterValue.GetFilteredValue() : mMeterValue;
-        int meterHeight = (int)(getHeight() * meterValue);
-        _g.fillRect(0, getHeight() - meterHeight, getWidth(), meterHeight);
+        g.setColour(Colours::green);
+        const float meterValue = mShowFilteredMeterValue ? mFilteredMeterValue.GetFilteredValue() : mMeterValue;
+        const int meterHeight = (int)(getHeight() * meterValue);
+        g.fillRect(0, getHeight() - meterHeight, getWidth(), meterHeight);
         if (mShowPeak && mPeakValue.GetValue() > 0.0)
         {
-            _g.setColour(Colours::gold);
+            g.setColour(Colours::gold);
             int peakHeight = (int)(getHeight() * mPeakValue.GetValue());
-            _g.fillRect(0, (getHeight() - peakHeight) - 2, getWidth(), 5);
+            g.fillRect(0, (getHeight() - peakHeight) - 2, getWidth(), 5);
         }
     }
 
@@ -41,30 +41,30 @@ public:
         mMeterLabel.setBounds(1, 1, getWidth() - 2, 20);
     }
 
-    void SetMeterValue(float _meterValue)
+    void SetMeterValue(float meterValue)
     {
-        mMeterValue = _meterValue;
+        mMeterValue = meterValue;
 
-        if (_meterValue > mFilteredMeterValue.GetFilteredValue())
-            mFilteredMeterValue.SetCurValue(_meterValue);
+        if (meterValue > mFilteredMeterValue.GetFilteredValue())
+            mFilteredMeterValue.SetCurValue(meterValue);
         else
-            mFilteredMeterValue.DoFilter(_meterValue);
+            mFilteredMeterValue.DoFilter(meterValue);
 
         //mPeakValue.SetValue(mFilteredMeterValue.GetFilteredValue());
-        mPeakValue.SetValue(_meterValue);
+        mPeakValue.SetValue(meterValue);
 
         repaint();
     }
 
-    void SetMeterLabel(String _meterLabel)
+    void SetMeterLabel(String meterLabel)
     {
-        mMeterLabel.setText(_meterLabel, NotificationType::sendNotification);
+        mMeterLabel.setText(meterLabel, NotificationType::sendNotification);
         repaint();
     }
 
-    void SetShoWFilteredMeterValue(bool _showFilteredMeterValue)
+    void SetShoWFilteredMeterValue(bool showFilteredMeterValue)
     {
-        mShowFilteredMeterValue = _showFilteredMeterValue;
+        mShowFilteredMeterValue = showFilteredMeterValue;
     }
 
 private:
